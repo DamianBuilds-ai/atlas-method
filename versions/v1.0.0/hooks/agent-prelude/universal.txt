@@ -1,0 +1,51 @@
+UNIVERSAL AGENT RULES
+
+You are a spawned agent. You do NOT inherit the main CLAUDE.md or any project
+memory. Everything you need to know is in this prelude and in your task brief.
+
+1. NO EM DASHES. Use ' - ' (space-hyphen-space). Never use em dashes or '---'
+   as a sentence connector.
+
+2. SEQUENTIAL PROCESSING. If your task has multiple items, do them ONE AT A
+   TIME. Complete each before moving to the next. Never batch-read five or more
+   items at once.
+
+3. DOMAIN ISOLATION. Read ONLY the files named in your task brief. Never explore
+   "just in case." If you need a file outside your stated scope, stop and return
+   a scope-exceeded signal instead of reaching for it.
+
+4. INCREMENTAL OUTPUT. Write progress to your output file after each item or
+   major step. Do not buffer everything until the end - if you are interrupted,
+   completed work must already be saved.
+
+5. LEAD WITH THE ANSWER. For research or analysis tasks, put the conclusion or
+   recommendation in the first few lines, then the findings, then the supporting
+   evidence at the bottom. The reader should get the point without scrolling.
+
+6. STAY IN YOUR TIER. Each tier has a scope - retrieval, analysis, mechanical
+   execution, or design. If the task drifts outside your tier, return a
+   scope-exceeded signal with a short recovery hint. Do not silently take on
+   work above your tier.
+
+7. RESPECT THE TOOL BUDGET. Your brief gives you a hard maximum and a soft
+   target for tool calls. Aim for the soft target. If you hit the hard maximum,
+   stop and report what you have rather than pushing past it.
+
+OUTPUT CONTRACT
+
+Begin every output file with this frontmatter:
+
+---
+schemaVersion: 1
+tier: scout | analyst | builder | architect
+status: complete | partial | failed | scope-exceeded
+tool_budget_used: N
+recovery_hint: (required only if status is not complete)
+---
+
+- Write your deliverable to the working-output directory named in your brief,
+  with a dated, kebab-case filename.
+- Any long copy-paste content for the user goes into its own file, never inline
+  in the chat summary.
+- The summary the main session relays back to the user is short: the answer
+  first, a few bullets, and a path to the full output. No raw evidence dumps.

@@ -1,0 +1,45 @@
+{
+  "name": "atlas-method",
+  "version": "1.0.0",
+  "methodologyVersion": "7.5.6",
+  "license": "MIT",
+  "description": "A lean-by-design documentation methodology for running a personal operating system on Claude Code.",
+  "fileClasses": {
+    "CANONICAL": "Methodology core. Travels as-is into a user's instance and is updated from upstream. Do not hand-edit locally.",
+    "SCAFFOLD": "Templates a user copies once and then fills in. Owned by the user after instantiation; never updated from upstream.",
+    "LOCAL-ONLY": "Generated inside a user's instance and never present in this source repo (listed here for completeness)."
+  },
+  "files": [
+    { "path": "README.md", "class": "CANONICAL", "purpose": "Repo landing page and methodology overview." },
+    { "path": "LICENSE", "class": "CANONICAL", "purpose": "MIT license." },
+    { "path": "versions/v1.0.0/VERSION", "class": "CANONICAL", "purpose": "Literal public version string." },
+    { "path": "versions/v1.0.0/README.md", "class": "CANONICAL", "purpose": "Version-specific overview: what ships, what is deferred." },
+    { "path": "versions/v1.0.0/CHANGELOG.md", "class": "CANONICAL", "purpose": "Release notes and two-track version mapping." },
+    { "path": "versions/v1.0.0/manifest.json", "class": "CANONICAL", "purpose": "This file. Version, file inventory, and per-file class." },
+    { "path": "versions/v1.0.0/bin/atlas-init", "class": "CANONICAL", "purpose": "Bootstrap script that scaffolds a fresh instance from the skeleton." },
+    { "path": "versions/v1.0.0/docs/ATLAS_METHOD.md", "class": "CANONICAL", "purpose": "The methodology specification." },
+    { "path": "versions/v1.0.0/docs/AGENT-PATTERNS.md", "class": "CANONICAL", "purpose": "Agent delegation tiers and discipline rules." },
+    { "path": "versions/v1.0.0/docs/DOC-PROTOCOL.md", "class": "CANONICAL", "purpose": "Documentation protocol: how trees grow, split, and are named." },
+    { "path": "versions/v1.0.0/docs/HOOKS.md", "class": "CANONICAL", "purpose": "Reference for the hook system and agent-prelude injection." },
+    { "path": "versions/v1.0.0/commands/atlas.md", "class": "CANONICAL", "purpose": "The /atlas self-audit command definition." },
+    { "path": "versions/v1.0.0/hooks/pre-read-hook.sh", "class": "CANONICAL", "purpose": "Pre-read hook." },
+    { "path": "versions/v1.0.0/hooks/agent-rules-inject.sh", "class": "CANONICAL", "purpose": "Injects the agent prelude into spawned agents." },
+    { "path": "versions/v1.0.0/hooks/agent-prelude/universal.txt", "class": "CANONICAL", "purpose": "Universal agent rules injected into every dispatch." },
+    { "path": "versions/v1.0.0/hooks/agent-prelude/safety.txt", "class": "CANONICAL", "purpose": "Safety prohibitions injected into every dispatch." },
+    { "path": "versions/v1.0.0/procedures/fragile-verification.md", "class": "CANONICAL", "purpose": "Playbook for verifying before changing fragile state." },
+    { "path": "versions/v1.0.0/procedures/leaf-creation.md", "class": "CANONICAL", "purpose": "Playbook for extracting a leaf doc from a growing trunk." },
+    { "path": "versions/v1.0.0/skeleton/CLAUDE.md.template", "class": "SCAFFOLD", "purpose": "The soil template: behavioural rules a user fills in for their own system." },
+    { "path": "versions/v1.0.0/skeleton/DOMAIN.md.template", "class": "SCAFFOLD", "purpose": "Trunk template: a domain's reference doc." },
+    { "path": "versions/v1.0.0/skeleton/DOMAIN_QUEUE.md.template", "class": "SCAFFOLD", "purpose": "Queue template: a domain's active work." },
+    { "path": "versions/v1.0.0/skeleton/DOMAIN_HANDOFF.md.template", "class": "SCAFFOLD", "purpose": "Handoff template: session-to-session message." },
+    { "path": "versions/v1.0.0/skeleton/DOMAIN_IDEAS.md.template", "class": "SCAFFOLD", "purpose": "Ideas template: a domain's parking lot." },
+    { "path": "versions/v1.0.0/examples/example-domain/READING.md", "class": "CANONICAL", "purpose": "Worked example trunk for an illustrative Reading domain." },
+    { "path": "versions/v1.0.0/examples/example-domain/READING_QUEUE.md", "class": "CANONICAL", "purpose": "Worked example queue." },
+    { "path": "versions/v1.0.0/examples/example-domain/READING_HANDOFF.md", "class": "CANONICAL", "purpose": "Worked example handoff." },
+    { "path": "versions/v1.0.0/examples/example-domain/READING_IDEAS.md", "class": "CANONICAL", "purpose": "Worked example ideas parking lot." }
+  ],
+  "localOnly": [
+    "CLAUDE.md (instantiated from skeleton in a user's instance)",
+    "{DOMAIN}.md and its branches (instantiated per domain by the user)"
+  ]
+}

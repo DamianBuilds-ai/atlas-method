@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+# atlas-init - bootstrap a fresh Atlas Method instance
+#
+# Usage:
+#   sh bin/atlas-init [TARGET_DIR]
+#
+# If TARGET_DIR is omitted, the current directory is used. The script copies
+# the CLAUDE.md soil template and the four-document skeleton into place so you
+# can open TARGET_DIR in Claude Code and start filling in the placeholders.
+#
+# This script is intentionally simple and POSIX sh. It does not overwrite files
+# that already exist - run it once on a fresh directory.
+
+set -eu
+
+# --- Resolve paths -----------------------------------------------------------
+
+# Directory this script lives in (versions/v1.0.0/bin), then the version root.
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+VERSION_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
+SKELETON_DIR="$VERSION_DIR/skeleton"
+
+# Target: first argument, or the current working directory.
+TARGET_DIR="${1:-$(pwd)}"
+
+# --- Sanity checks -----------------------------------------------------------
+
+if [ ! -d "$SKELETON_DIR" ]; then
+  echo "error: skeleton directory not found at $SKELETON_DIR" >&2
+  echo "       run this script from inside a cloned atlas-method repo." >&2
+  exit 1
+fi
+
+mkdir -p "$TARGET_DIR"
+
+# --- Helper: copy a file only if the destination does not exist --------------
+
+copy_if_absent() {
+  src="$1"
+  dest="$2"
+  if [ -e "$dest" ]; then
+    echo "  skip   $dest (already exists)"
+  else
+    cp "$src" "$dest"
+    echo "  create $dest"
+  fi
+}
+
+# --- Copy the soil -----------------------------------------------------------
+
+echo "Scaffolding Atlas Method instance in: $TARGET_DIR"
+echo ""
+echo "Soil:"
+copy_if_absent "$SKELETON_DIR/CLAUDE.md.template" "$TARGET_DIR/CLAUDE.md"
+
+# --- Copy the four-document skeleton for a first domain ----------------------
+#
+# The templates use DOMAIN as a placeholder. We copy them with the literal
+# DOMAIN name so you can rename them to your first real domain. Edit the files,
+# then rename DOMAIN.md -> YOURDOMAIN.md (and the same for the others).
+
+echo ""
+echo "First domain (rename DOMAIN -> your first real domain):"
+copy_if_absent "$SKELETON_DIR/DOMAIN.md.template"         "$TARGET_DIR/DOMAIN.md"
+copy_if_absent "$SKELETON_DIR/DOMAIN_QUEUE.md.template"   "$TARGET_DIR/DOMAIN_QUEUE.md"
+copy_if_absent "$SKELETON_DIR/DOMAIN_HANDOFF.md.template" "$TARGET_DIR/DOMAIN_HANDOFF.md"
+copy_if_absent "$SKELETON_DIR/DOMAIN_IDEAS.md.template"   "$TARGET_DIR/DOMAIN_IDEAS.md"
+
+# --- Done --------------------------------------------------------------------
+
+echo ""
+echo "Done. Next steps:"
+echo "  1. Open $TARGET_DIR in Claude Code."
+echo "  2. Edit CLAUDE.md - replace the placeholders with your name and your"
+echo "     first two or three domains."
+echo "  3. Rename the DOMAIN.* files to your first real domain and fill them in."
+echo "  4. Copy commands/atlas.md into your Claude Code commands directory."
+echo ""
+echo "See the version README and examples/ for a worked reference."

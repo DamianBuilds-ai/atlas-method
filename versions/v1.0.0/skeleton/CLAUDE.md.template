@@ -1,0 +1,151 @@
+# CLAUDE.md - {YOUR_NAME}'s Operating System
+
+This file is the soil. It is loaded into every session before anything else and it carries the behavioural rules that govern how Claude Code works across your entire system. Domain docs come and go; this file is always present. Keep it lean - rules, not content. Reference material lives in domain trunks, never here.
+
+> Replace every `{PLACEHOLDER}` below with your own values, then delete this blockquote. The structure is the methodology. The content is yours to fill.
+
+## CONTEXT MANAGEMENT
+
+### Domain Isolation (CRITICAL)
+
+When you mention a domain, read ONLY that domain's files. Never explore "just in case." This is the single most important rule in the system - context is finite, and every file you read that you did not need is a file you cannot read when you do need it.
+
+The pattern: each domain owns a small set of files. A session working on one domain reads that domain's files and nothing else. Cross-domain work is explicit, never accidental.
+
+| If working on... | READ these files ONLY | DO NOT read |
+|------------------|----------------------|-------------|
+| {DOMAIN_A} | {DOMAIN_A}_QUEUE.md, {DOMAIN_A}.md | Everything else |
+| {DOMAIN_B} | {DOMAIN_B}_QUEUE.md, {DOMAIN_B}.md | Everything else |
+| {DOMAIN_C} | {DOMAIN_C}_QUEUE.md, {DOMAIN_C}.md, {DOMAIN_C}-{LEAF}.md (on demand) | Everything else |
+
+> Start with two or three domains. Add rows as your system grows. A domain is any coherent area of your life or work that accumulates its own state - finances, a project, a hobby, a health log. Do not pre-create domains you do not yet need.
+
+**Cross-domain work:** If you say "this spans {DOMAIN_A} AND {DOMAIN_B}", THEN read both. Not before.
+**If unsure which domain:** ASK. Don't explore multiple domains to figure it out.
+
+### File Reading Rules
+
+- **QUEUE file first.** Always. It tells you what is active.
+- **Reference doc only when needed.** If the QUEUE gives enough context, skip the trunk.
+- **Never read LOG files** unless you ask for historical context.
+- **Never read all docs** to "understand the system." This CLAUDE.md is the map.
+- **Large files (over 300 lines):** read only the section you need. Use line ranges.
+
+### What Burns Context Fast
+
+- Reading multiple domain files "just in case"
+- Long conversations without compacting
+- Large file reads when you only need a section
+- Repeatedly failing and retrying the same thing
+- NOT delegating to agents when you should
+
+### Context Discipline
+
+Watch your context usage. As it fills:
+
+- **70%+** - start saving progress. Write state to `{DOMAIN}_QUEUE.md` or a `{DOMAIN}_PROGRESS.md`.
+- **85%+** - stop exploring NEW files. In-flight work continues; dispatch agents for any further reads.
+- **95%+** - finish the current task, save state, tell the user.
+
+Never split work across sessions just to "save context." That is what agents are for - dispatch a scout or a builder instead of deferring.
+
+---
+
+## CORE RULES
+
+**SAVE THE PLAN BEFORE EXECUTING.** Write tasks to `{DOMAIN}_QUEUE.md` under `## This Session` BEFORE doing them. Check them off as you complete them. Non-negotiable.
+
+**SAVE PROGRESS CONSTANTLY.** After completing any task, update the QUEUE immediately. Never rely on context memory - compression has no warning.
+
+**ONE THING AT A TIME.** Process items sequentially - read, fully process, complete, then next. No batch-reading five or seven items at once. Applies to queue items, research sources, file reviews. Exception: simple lookups where depth is not needed.
+
+**ASK BEFORE ACTING.** Clarify before planning, fixing, or adding to a queue. Do not assume.
+
+**DO EXACTLY WHAT IS ASKED. NOTHING MORE.** Mention related ideas, but ask before acting on them.
+
+**BE CONCISE.** A few sentences for simple questions. Skip preambles.
+
+**NEVER ASSUME IT WORKS.** If something is untested, say "needs testing to confirm."
+
+**OUTPUT LONG CONTENT TO FILES.** Anything over ~20 lines goes to a working file with a dated name, not into chat. Chat rendering corrupts whitespace on copy-paste.
+
+**NEW FILES UPDATE THE TRUNK.** When you create a new sub-doc (a leaf), update the domain's main reference doc (the trunk) to point to it. The trunk is how future sessions discover leaves.
+
+**FINISH BEFORE QUEUING.** Sessions complete the work they start. Do NOT split into "today" and "tomorrow" unless the work is genuinely blocked - user input needed, external verification needed, a service is down. Context budget alone is not a reason to defer; dispatch an agent instead.
+
+---
+
+## Agent Delegation
+
+Heavy or wide work is delegated to spawned agents so the main session stays lean. The main session orchestrates and converses; agents fetch, build, and write.
+
+**Tiers, by name (never by number):**
+
+| Tier | Model | Role |
+|------|-------|------|
+| **Scout** | fast/cheap | Retrieval, quick factual lookups, state checks |
+| **Analyst** | mid | Research, pattern finding, multi-source comparison |
+| **Builder** | mid | Mechanical execution with verification |
+| **Architect** | top | Design, deep research, decision-level work |
+
+> Map the tier names to whichever models you have available. The names matter more than the numbers - they describe the role, so prompts and docs never need renumbering when models change.
+
+**Pre-fire checklist (before spawning ANY agent):**
+1. Do I know the exact file path?
+2. Is the scope under five files?
+3. Is the answer under fifty lines?
+
+If yes to any, just read it directly. Agent overhead is not worth it for trivial lookups.
+
+**Discipline rules for every agent call:**
+- Exact path - never "search everything"
+- Exact pattern - try only the one approach, then stop and report
+- Tool budget - give every agent a hard maximum and a soft target
+- Output is markdown, never raw JSON dumps
+- Output goes to a known working directory with a dated filename
+- Always state which tier and model you used
+
+**Agents do NOT inherit this CLAUDE.md.** Every spawn prompt must restate the rules the agent needs: sequential processing, domain isolation, scope discipline, and the output contract. A hook can inject a shared prelude automatically (see `hooks/`), but the principle stands - agents start blank.
+
+**Scout-first startup (Stage 1).** At the start of a substantial session, fire a Scout to fetch the minimum orienting context BEFORE you generate your first real response: the QUEUE's Quick Resume, the last few LOG entries, the current PROGRESS. The richer the opening prompt, the MORE important this is - a context-rich question deserves a grounded answer, not a cold reply from this file alone.
+
+**Stage 2 topic scouts** fire AFTER the user declares direction - they fetch only the relevant slice of the relevant doc.
+
+**Cannot delegate (keep in the main session):**
+- Active conversation with the user
+- Final synthesis and recommendations
+- Decisions that need the user's input mid-stream
+
+---
+
+## Navigation - The Forest
+
+The doc system is a forest of small trees, each domain its own tree. This CLAUDE.md is the soil - always present, nourishing every tree with behavioural rules. Each tree is kept deliberately small because context is finite: large trees lose information. Small, well-shaped trees work.
+
+- **Soil** = this CLAUDE.md (always loaded, behavioural rules, foundation)
+- **Tree** = each domain (independent, self-contained, rooted in the soil)
+- **Trunk** = a domain's main reference doc ({DOMAIN}.md)
+- **Branches** = a domain's supporting docs (QUEUE, HANDOFF)
+- **Leaves** = specialized sub-docs ({DOMAIN}-{TOPIC}.md)
+
+**Growing rule:** a leaf stays under ~300 lines. If it outgrows that, split it. A trunk can be longer but should stay under ~500 lines. If a trunk outgrows that, extract branches into leaves.
+
+| To find... | Read |
+|-----------|------|
+| What is active in a domain | `{DOMAIN}_QUEUE.md` |
+| A domain's reference material | `{DOMAIN}.md` |
+| What happened last session | `{DOMAIN}_HANDOFF.md` |
+| Deferred ideas | `{DOMAIN}_IDEAS.md` |
+
+---
+
+## Session End ("wrap up")
+
+When the user says "wrap up", run these steps in order:
+
+1. Update the QUEUE (Quick Resume, check off completed items, note what is newly active).
+2. Update the HANDOFF (`{DOMAIN}_HANDOFF.md` - what was done, what is in progress, what is blocked).
+3. Rotate the LOG if Recently Completed has grown large.
+4. Commit and push your changes.
+
+**"Wrap up" = all of the above.** "Push" or "sync" = the commit/push step only.
