@@ -8,10 +8,7 @@ By [DamianBuilds](https://portfolio.damianbuilds.com).
 
 ## 🚧 Coming soon
 
-This repository is the future home of the Atlas Method. Content is being prepared and will land here shortly.
-
-In the meantime, the current published methodology lives at
-[`DamianBuilds-ai/claude-code-system`](https://github.com/DamianBuilds-ai/claude-code-system).
+This repository is the home of the Atlas Method. Content is being prepared and will land here shortly.
 
 ---
 
