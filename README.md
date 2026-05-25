@@ -1,10 +1,24 @@
 # Atlas Method
 
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-stable-brightgreen)
+
 **A lean-by-design documentation methodology for running your life through Claude Code.**
 
 Atlas Method is the structure underneath a personal operating system built on Claude Code: a forest of small, self-contained domain docs, governed by one set of behavioural rules, kept deliberately lean so that context - the scarcest resource in any AI session - is never wasted.
 
 It is not an app. It is not a framework you install and run. It is a way of shaping your files so that an AI assistant can pick up any corner of your life cold, work on it without drowning in irrelevant context, and hand off cleanly to the next session.
+
+## Contents
+
+- [What Atlas Method Is](#what-atlas-method-is)
+- [Quick Install](#quick-install)
+- [Full Setup](#full-setup)
+- [The `/atlas` Command](#the-atlas-command)
+- [The Philosophy](#the-philosophy)
+- [The Forest Model](#the-forest-model)
+- [Contributing](#contributing)
 
 ---
 
@@ -70,6 +84,30 @@ Three principles do most of the work.
 ## The Forest Model
 
 The whole system is a forest of small trees. One vocabulary describes every part of it:
+
+```mermaid
+graph TD
+    Soil[CLAUDE.md - soil<br/>always loaded, behavioral rules]
+    Soil --> Tree1[Domain A - tree]
+    Soil --> Tree2[Domain B - tree]
+    Soil --> Tree3[Domain C - tree]
+    Tree1 --> Trunk1[Trunk<br/>main reference doc]
+    Trunk1 --> Branch1a[Queue<br/>active work]
+    Trunk1 --> Branch1b[Handoff<br/>continuity]
+    Trunk1 --> Branch1c[Log<br/>history]
+    Branch1a --> Leaf1a1[Leaf<br/>specialised sub-doc]
+    Branch1a --> Leaf1a2[Leaf<br/>specialised sub-doc]
+    classDef soil fill:#3a2e26,stroke:#8b6f4e,color:#f5e6d3
+    classDef tree fill:#1f3a2e,stroke:#5e8b6f,color:#e6f5ea
+    classDef trunk fill:#2e3a4e,stroke:#5e6f8b,color:#e6eaf5
+    classDef branch fill:#3a2e4e,stroke:#6f5e8b,color:#eae6f5
+    classDef leaf fill:#4e3a2e,stroke:#8b6f5e,color:#f5eae6
+    class Soil soil
+    class Tree1,Tree2,Tree3 tree
+    class Trunk1 trunk
+    class Branch1a,Branch1b,Branch1c branch
+    class Leaf1a1,Leaf1a2 leaf
+```
 
 - **Soil** - `CLAUDE.md`. Always loaded. The behavioural rules that nourish every tree. Rules, not content.
 - **Tree** - a domain. Independent and self-contained, rooted in the soil.

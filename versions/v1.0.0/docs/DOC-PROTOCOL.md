@@ -1,5 +1,7 @@
 # DOC-PROTOCOL.md  -  Leaf Management Protocol
 
+> **In this set:** [Methodology](ATLAS_METHOD.md) · [Agent patterns](AGENT-PATTERNS.md) · **Doc protocol** · [Hooks](HOOKS.md) · [↩ Repo root](../../../README.md)
+
 **Applies to:** All sub-docs (leaves) across all domains.
 **Trigger:** When any leaf approaches ~280 lines.
 
@@ -51,7 +53,8 @@ After any split, update three things:
 2. **CLAUDE.md System Files**  -  add the new leaf to the domain's leaf list so the root knows it exists.
 3. **The original leaf**  -  add a one-line cross-reference at the top of any section that was split: `-> See {NEW-LEAF}.md for {topic}.`
 
-Don't skip step 2. If the root doesn't know about a leaf, the next session won't either.
+> [!IMPORTANT]
+> Don't skip step 2. If the root doesn't know about a leaf, the next session won't either.
 
 ---
 
@@ -153,7 +156,7 @@ Sub-tracks can surface via a separate slash command or as an argument to the par
 - Doesn't need different scout dispatch
 
 **Decision tree:**
-```
+```text
 Does the sub-track need a different scout fleet / personality / context isolation?
 |-- YES: separate slash command (/parent-subtrack)
 |-- NO: shared scouts, same personality, just a profile flip?

@@ -1,5 +1,7 @@
 # HOOKS.md - Claude Code Hooks Reference & Design
 
+> **In this set:** [Methodology](ATLAS_METHOD.md) · [Agent patterns](AGENT-PATTERNS.md) · [Doc protocol](DOC-PROTOCOL.md) · **Hooks** · [↩ Repo root](../../../README.md)
+
 **Purpose:** One place where everything about your Claude Code hooks lives - what events exist, what hooks are active, what patterns work, what antipatterns to avoid, and how the unified session-start hook dispatcher is designed.
 **Companion:** `ATLAS_METHOD.md` (the methodology), `DOC-PROTOCOL.md` (leaf management).
 

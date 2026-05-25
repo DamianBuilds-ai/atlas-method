@@ -1,8 +1,38 @@
 # AGENT-PATTERNS.md
 
+> **In this set:** [Methodology](ATLAS_METHOD.md) · **Agent patterns** · [Doc protocol](DOC-PROTOCOL.md) · [Hooks](HOOKS.md) · [↩ Repo root](../../../README.md)
+
 **Purpose:** Canonical reference for the Atlas Method's 7-tier agent delegation system. Every domain command that spawns an agent follows this spec. Your root instruction file (e.g. `CLAUDE.md`) points here. Agent prompts are copy-pasteable from this file.
 
 **Schema version:** 1
+
+## Contents
+
+- [The 7 tiers](#the-7-tiers)
+- [Shared rules for all tiers](#shared-rules-for-all-tiers)
+- [The six discipline rules](#the-six-discipline-rules)
+- [Critical prohibitions (every tier)](#critical-prohibitions-every-tier)
+- [Universal output envelope](#universal-output-envelope)
+- [BLUF Output Structure](#bluf-output-structure-mandatory-for-analyst-engineer-researcher-architect-outputs)
+- [Tier - Scout](#tier---scout)
+- [Tier - Analyst](#tier---analyst)
+- [Tier - Builder](#tier---builder)
+- [Tier - Scribe](#tier---scribe)
+- [Tier - Engineer](#tier---engineer)
+- [Tier - Researcher](#tier---researcher)
+- [Tier - Architect](#tier---architect)
+- [Specialist Tier Roles](#specialist-tier-roles)
+- [When NOT to delegate at all](#when-not-to-delegate-at-all)
+- [Agents spawning agents](#agents-spawning-agents)
+- [Warm startup pattern](#warm-startup-pattern)
+- [Throughout pattern](#throughout-pattern)
+- [Inline vs File Reference - When to Use Which](#inline-vs-file-reference---when-to-use-which)
+- [Pre-Deploy Speculative Pattern](#pre-deploy-speculative-pattern)
+- [File output convention](#file-output-convention)
+- [Reading check for main session (once per 10 turns)](#reading-check-for-main-session-once-per-10-turns)
+- [Hook-injected prelude system (Pattern D)](#hook-injected-prelude-system-pattern-d)
+- [Agent prompt patterns (A, B, C)](#agent-prompt-patterns-a-b-c)
+- [Cross-machine file transfer](#cross-machine-file-transfer)
 
 ---
 
@@ -29,6 +59,9 @@ Tier numbers exist ONLY in this canonical table. All prose (command bodies, slas
 **Dispatch description convention:** prefix every dispatch description with the tier name (e.g. "Builder - <task>", "Scout - <task>") so the agent role is visible in the dispatch UI, which displays the description plus model.
 
 The cheapest model is never the main chat model. It only runs as a Scout agent.
+
+> [!NOTE]
+> **Roadmap:** Two additional tiers - **Explorer** (wide-grep discovery across unknown territory) and **Setter** (exact deterministic apply, cheap apply tier) - are in evaluation as of v1.0.0 and may land in a future public version. See CHANGELOG for the two-track version mapping.
 
 ---
 
@@ -76,7 +109,8 @@ NEVER mutate an admin user password or any service authentication credential.
 
 If a task requires privileged operations and the required credential is unavailable, signal `scope-exceeded` with `recovery_hint: "privileged operation - escalate to main session, awaits service-account credential"` and stop.
 
-**Why this exists:** the canonical failure is an agent that sets an admin password to a temporary value to obtain a token, then attempts to "restore" the original hash byte-for-byte. The restore does not produce a working hash, the operator is locked out, and token-dependent automation breaks silently. The brief asked for fresh credentials, the agent complied, the restore step did not validate. Stopping early is correct - the operator recovers in seconds. Improvising destructively costs hours.
+> [!WARNING]
+> **Why this exists:** the canonical failure is an agent that sets an admin password to a temporary value to obtain a token, then attempts to "restore" the original hash byte-for-byte. The restore does not produce a working hash, the operator is locked out, and token-dependent automation breaks silently. The brief asked for fresh credentials, the agent complied, the restore step did not validate. Stopping early is correct - the operator recovers in seconds. Improvising destructively costs hours.
 
 This rule is best enforced at the spawn-prompt layer via a keyword-triggered prelude addon (see "Hook-injected prelude system" below). When an agent prompt mentions a credential-bearing service, the prohibition block is injected at the top of the prelude so agents see it before any examples.
 
@@ -86,7 +120,7 @@ This rule is best enforced at the spawn-prompt layer via a keyword-triggered pre
 
 Every agent output starts with:
 
-```
+```yaml
 ---
 schemaVersion: 1
 tier: scout | analyst | builder | scribe | engineer | researcher | architect
@@ -163,7 +197,7 @@ Verbatim retrieval. Quick factual research. File existence checks. State lookups
 Pattern analysis. Comparisons. Recommendations. Judgment calls.
 
 ### Output body
-```
+```markdown
 ## Verbatim Excerpts
 {path}:{line_start}-{line_end}
 {exact text block}
@@ -174,7 +208,7 @@ Pattern analysis. Comparisons. Recommendations. Judgment calls.
 ```
 
 ### Prompt template
-```
+```text
 You are a Scout.
 
 EXACT FILE: {path}
@@ -212,7 +246,7 @@ Research. Pattern finding. Multi-source comparisons. Light audits. Technology ev
 Making decisions. Proposing commands. Writing decision records. Anything requiring final judgment.
 
 ### Output body
-```
+```markdown
 ## Findings
 {main result}
 
@@ -227,7 +261,7 @@ HIGH | MEDIUM | LOW per finding
 ```
 
 ### Prompt template
-```
+```text
 You are an Analyst.
 
 EXACT FILES: {paths}
@@ -266,7 +300,7 @@ Mechanical edits with verification. Precise-spec refactors. Test runs. Small cod
 Changes requiring judgment about WHAT the change should be. Design decisions. Anything ambiguous.
 
 ### Output body
-```
+```markdown
 ## Changes Made
 {diff summary with file:line}
 
@@ -284,7 +318,7 @@ PASS | FAIL
 ```
 
 ### Prompt template
-```
+```text
 You are a Builder.
 
 EXACT FILE: {path}
@@ -332,7 +366,7 @@ Retrieval (Scout). Synthesis across many sources (Researcher). File execution / 
 **Scribe vs Architect:** Scribe composes from a brief that already exists. Architect creates the brief by designing. If the artifact requires figuring out the structure first, Architect drafts the structure and Scribe fleshes out the prose.
 
 ### Output body
-```
+```markdown
 ## Artifact
 {the prose}
 
@@ -347,7 +381,7 @@ Retrieval (Scout). Synthesis across many sources (Researcher). File execution / 
 ```
 
 ### Prompt template
-```
+```text
 You are a Scribe.
 
 DELIVER: {artifact description}
@@ -391,7 +425,7 @@ Design decisions. Architecture-level decisions. Cross-domain pattern design. Dee
 **Engineer to Architect:** Design authority required. System-level architecture choice. Cross-domain impact. Decision-record-level decision. Deep research needed before execution can begin.
 
 ### Output body
-```
+```markdown
 ## Changes Made
 {diff summary}
 
@@ -414,7 +448,7 @@ PASS | FAIL
 The Decisions Made log is the load-bearing addition. Without it, judgment calls during execution are invisible and non-reviewable.
 
 ### Prompt template
-```
+```text
 You are an Engineer.
 
 GOAL: {outcome description}
@@ -463,7 +497,7 @@ Single-source extraction (Scout). Single-pattern analysis (Analyst). File execut
 **Researcher vs Engineer:** Engineer executes with judgment during execution. Researcher synthesizes without execution. If the work changes files, Engineer (with Researcher input as needed).
 
 ### Output body
-```
+```markdown
 ## Synthesis
 {main result - the cross-source picture}
 
@@ -481,7 +515,7 @@ HIGH | MEDIUM | LOW per finding, with the dimension driving uncertainty
 ```
 
 ### Prompt template
-```
+```text
 You are a Researcher.
 
 GOAL: {synthesis question or best-of-N decision}
@@ -524,7 +558,7 @@ Complex execution with real judgment. Design. Deep research. Decision-record wri
 Work that fits Builder or Engineer. The cost has to earn its way in.
 
 ### Output body
-```
+```markdown
 ## Artifact
 {the delivered work}
 
@@ -539,7 +573,7 @@ Work that fits Builder or Engineer. The cost has to earn its way in.
 ```
 
 ### Prompt template
-```
+```text
 You are an Architect.
 
 DELIVER: {artifact description}
@@ -654,7 +688,8 @@ After the operator declares a topic, one or more Scouts fetch only the slice of 
 
 Per-domain tuning is allowed. Heavy-load domains may skip more of Stage 1. Light domains may barely need Stage 1.
 
-**Stage 1 is unconditional.** Stage 1 fires regardless of user prompt content. The richer the user's opening prompt, the MORE important Stage 1 becomes - context-rich prompts deserve scout-grounded answers, not cold replies. Long openers do NOT exempt the chat from Stage 1; they amplify the need. The model tendency to respond conversationally to long prompts without first executing session-start fleets is a KNOWN failure mode. Reinforce it with a root-instruction core rule and a UserPromptSubmit hook that fires when the prompt is long and starts with a slash command.
+> [!IMPORTANT]
+> **Stage 1 is unconditional.** Stage 1 fires regardless of user prompt content. The richer the user's opening prompt, the MORE important Stage 1 becomes - context-rich prompts deserve scout-grounded answers, not cold replies. Long openers do NOT exempt the chat from Stage 1; they amplify the need. The model tendency to respond conversationally to long prompts without first executing session-start fleets is a KNOWN failure mode. Reinforce it with a root-instruction core rule and a UserPromptSubmit hook that fires when the prompt is long and starts with a slash command.
 
 ---
 

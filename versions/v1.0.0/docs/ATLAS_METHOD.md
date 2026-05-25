@@ -1,8 +1,26 @@
 # The Atlas Method
 
+> **In this set:** **Methodology** · [Agent patterns](AGENT-PATTERNS.md) · [Doc protocol](DOC-PROTOCOL.md) · [Hooks](HOOKS.md) · [↩ Repo root](../../../README.md)
+
 > A lean-by-design methodology for personal operating systems built on Claude Code.
 
 **Version:** v1.0.0
+
+## Contents
+
+- [One-line summary](#one-line-summary)
+- [Principle Zero - Progressive loading](#principle-zero---progressive-loading)
+- [The problem this solves](#the-problem-this-solves)
+- [Five pillars](#five-pillars)
+- [Hard rules](#hard-rules)
+- [`/atlas` UX](#atlas-ux)
+- [Decisions locked](#decisions-locked)
+- [Still open](#still-open)
+- [Migration for existing users](#migration-for-existing-users)
+- [What this costs](#what-this-costs)
+- [Broadcast vs Fetch RAG - The Two-Pattern Frame](#broadcast-vs-fetch-rag---the-two-pattern-frame)
+- [Model-pairing agent formations](#model-pairing-agent-formations)
+- [Companion docs](#companion-docs)
 
 ---
 
@@ -40,7 +58,8 @@ That's the whole session-start payload. Under 400 lines per-domain by design.
 | `{DOMAIN}_DECISIONS.md`, `SYSTEM_MAP.md`, reference leaves | On-demand only, never at session start. Loaded when topic matches per the routing table. |
 | Role-split leaves (scope, rules, wrap-protocol, and similar) | On-demand. Loaded when the specific work calls for them. |
 
-**Why this matters:** every file NOT in the "session start" table is a token you don't pay at init. If you see a file loading automatically and it's not in the session-start table, that's a bug to fix - most likely in a slash command that reads too much, or a hook that cats a file in.
+> [!NOTE]
+> **Why this matters:** every file NOT in the "session start" table is a token you don't pay at init. If you see a file loading automatically and it's not in the session-start table, that's a bug to fix - most likely in a slash command that reads too much, or a hook that cats a file in.
 
 ### What loads during the session, on topic match
 
@@ -104,7 +123,7 @@ Every domain declares a type. The type drives rotation rhythm, LOG naming, and e
 | `ephemeral` | One-off cluster, terminal | Archive whole domain on close | Research sprint, single event |
 
 Declaration: one line at the top of `{DOMAIN}.md`:
-```
+```markdown
 > **Domain type:** dev
 ```
 
@@ -114,7 +133,8 @@ Universal QUEUE rules, fire regardless of type:
 2. Total QUEUE exceeds 80 lines -> mandatory audit (human decides what's dead)
 3. HANDOFF has more than 3 session blocks -> prune oldest
 
-**No mandatory staleness rule.** Calendar-based "this is stale" auto-tagging causes more false positives than it catches real bloat, and it grades tasks on pace - which violates neutral reporting. Legitimacy is a human call, not a timer. The 80-line cap is the actual backstop: when it fires, you audit everything, and stale items get surfaced as a neutral prompt ("3 items haven't moved in 30+ days - want to review?"). You decide. Never auto-marked.
+> [!IMPORTANT]
+> **No mandatory staleness rule.** Calendar-based "this is stale" auto-tagging causes more false positives than it catches real bloat, and it grades tasks on pace - which violates neutral reporting. Legitimacy is a human call, not a timer. The 80-line cap is the actual backstop: when it fires, you audit everything, and stale items get surfaced as a neutral prompt ("3 items haven't moved in 30+ days - want to review?"). You decide. Never auto-marked.
 
 ### Pillar III - Rotation by rhythm
 - **dev:** `{DOMAIN}_LOG_{project-slug}.md`, one per project. Archive to `archive/` on project close (all tasks done OR 30 days inactive).
@@ -169,7 +189,7 @@ The flat 80-line QUEUE cap is builder-hostile. Architects, developers, and anyon
 
 The active QUEUE is a control surface, not a dump. Structure:
 
-```
+```text
 {DOMAIN}_QUEUE.md (200 lines max)
 ├── Quick Resume (5-10 lines - what's the next action)
 ├── Active work (this-session tasks, ~100 lines)
@@ -242,7 +262,7 @@ Log rotation discipline has two paths based on whether the user has agent budget
 
 Every audit output ends with TWO lines before the interactive prompt:
 
-```
+```text
 [audit report body]
 
 Tip: next time, `/atlas fix` skips straight to interactive fixing.
@@ -352,7 +372,8 @@ Two formations for picking which model plays which role when output quality matt
 
 Pair a high-reasoning orchestrator model (plans, reasons, decides structure) with a writer model (produces the final voice-critical output). The orchestrator carries the structural reasoning; the writer lands the prose in a warmer default register, faster and cheaper.
 
-**Important nuance:** this is NOT a capability cap on the writer model. The orchestrator model actually holds the HIGHER creative ceiling - the split is about default register, cost, and speed, not "the writer model writes better." For peak prose, run orchestrator-steered (the orchestrator writes the final pass) or "orchestrator drafts -> writer revises." Reach for the plain Reason/Voice split when the writer's default warmth is good enough and you want the cost/speed win.
+> [!IMPORTANT]
+> **Important nuance:** this is NOT a capability cap on the writer model. The orchestrator model actually holds the HIGHER creative ceiling - the split is about default register, cost, and speed, not "the writer model writes better." For peak prose, run orchestrator-steered (the orchestrator writes the final pass) or "orchestrator drafts -> writer revises." Reach for the plain Reason/Voice split when the writer's default warmth is good enough and you want the cost/speed win.
 
 ### Pattern B - Ideation formation (orchestrator plans -> dispatches analysts -> best output)
 
