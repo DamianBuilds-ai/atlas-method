@@ -1,132 +1,208 @@
 # Atlas Method
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+*Lean-by-design methodology for running your life through Claude Code.*
+
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Templates](https://img.shields.io/badge/templates-7%20archetypes-orange)
+![Agents](https://img.shields.io/badge/agents-9%20tiers-purple)
 ![Status](https://img.shields.io/badge/status-stable-brightgreen)
 
-**A lean-by-design documentation methodology for running your life through Claude Code.**
+A forest of small, self-contained domain docs governed by one set of behavioural rules, kept lean so context - the scarcest resource in any AI session - is never wasted.
 
-Atlas Method is the structure underneath a personal operating system built on Claude Code: a forest of small, self-contained domain docs, governed by one set of behavioural rules, kept deliberately lean so that context - the scarcest resource in any AI session - is never wasted.
-
-It is not an app. It is not a framework you install and run. It is a way of shaping your files so that an AI assistant can pick up any corner of your life cold, work on it without drowning in irrelevant context, and hand off cleanly to the next session.
-
-## Contents
-
-- [What Atlas Method Is](#what-atlas-method-is)
-- [Quick Install](#quick-install)
-- [Full Setup](#full-setup)
-- [The `/atlas` Command](#the-atlas-command)
-- [The Philosophy](#the-philosophy)
-- [The Forest Model](#the-forest-model)
-- [Contributing](#contributing)
-
----
-
-## What Atlas Method Is
-
-Most people who try to run their life through an AI assistant hit the same wall: the context window. Pour everything into one giant file and the assistant reads slower, reasons worse, and eventually cannot hold it all. Split everything into a thousand files and the assistant cannot find anything.
-
-Atlas Method resolves this with three load-bearing ideas:
-
-- **Small trees.** Each domain - a project, a hobby, your finances, a health log - is its own small tree of documents. Independent. Self-contained. Deliberately kept small, because context is finite and large documents lose information.
-- **Context discipline.** A session reads only the files for the domain it is working on. Never "just in case." The rules that enforce this live in one always-loaded file, the soil, that every session inherits.
-- **Scout-first.** Wide or heavy work is delegated to spawned agents - cheap scouts for retrieval, builders for execution - so the main conversation stays lean and fast.
-
-The result is a system that scales with your life instead of collapsing under it.
-
----
-
-## Quick Install
-
-```sh
-git clone https://github.com/DamianBuilds-ai/atlas-method.git
-cd atlas-method
-sh versions/v1.0.0/bin/atlas-init ~/my-system
-```
-
-This scaffolds a fresh instance in `~/my-system`: a CLAUDE.md from the template, the four-document skeleton for your first domain, and the supporting structure. Open the new directory in Claude Code and start filling in the placeholders.
-
----
-
-## Full Setup
-
-1. **Clone the repo** and pick a home for your system - a directory Claude Code will open as a project.
-2. **Run `atlas-init`** pointing at that directory. It copies the skeleton templates into place and creates your CLAUDE.md from the template.
-3. **Fill in CLAUDE.md.** This is the soil. Replace the placeholders with your name and your first two or three domains. Do not pre-create domains you do not yet need.
-4. **Create your first domain** by copying the four skeleton docs (`DOMAIN.md`, `DOMAIN_QUEUE.md`, `DOMAIN_HANDOFF.md`, `DOMAIN_IDEAS.md`) and renaming them. See `versions/v1.0.0/examples/` for a worked example.
-5. **Wire the `/atlas` command** by copying `versions/v1.0.0/commands/atlas.md` into your Claude Code commands directory.
-6. **Optional: install the hooks** so spawned agents automatically inherit the universal rules and safety prohibitions. See `versions/v1.0.0/hooks/`.
-
-Every file you copy in is yours to edit. The templates teach the structure; the content is your life.
-
----
-
-## The `/atlas` Command
-
-`/atlas` is the self-audit. Run it and the methodology inspects your own system against its own rules: are any trunks too long, are leaves outgrowing their cap, are queues stale, is a domain leaking context into its neighbours. It surfaces drift as neutral prompts - "three items have not moved in a while, want to review?" - and never grades or auto-fixes. You decide.
-
-It is the methodology turned back on itself. The same discipline you apply to your domains, applied to the system that holds them.
-
----
-
-## The Philosophy
-
-Three principles do most of the work.
-
-**Small trees.** Context is finite. A 2,000-line document is a liability - the assistant reads it slowly and reasons over it poorly. A 200-line document is an asset. So every tree is kept small on purpose. Leaves cap at ~300 lines; trunks at ~500. When something outgrows its cap, it splits. Growth is sideways, into more small trees, never upward into one big one.
-
-**Context discipline.** The most expensive mistake an AI session can make is reading a file it did not need. Every irrelevant token spent is a relevant token it cannot spend later. So domain isolation is the law: read only what this domain needs, ask before crossing domains, and never explore to "understand the system" - the map already exists.
-
-**Scout-first.** The main conversation is the scarcest real estate in the system. Protect it. Delegate retrieval to cheap scout agents, mechanical work to builders, design to architects - and keep the main session for what only it can do: talk to you, synthesise, and decide.
-
----
-
-## The Forest Model
-
-The whole system is a forest of small trees. One vocabulary describes every part of it:
+Clone, run one script, and you have a working personal operating system on Claude Code in under 20 minutes.
 
 ```mermaid
 graph TD
-    Soil[CLAUDE.md - soil<br/>always loaded, behavioral rules]
-    Soil --> Tree1[Domain A - tree]
-    Soil --> Tree2[Domain B - tree]
-    Soil --> Tree3[Domain C - tree]
-    Tree1 --> Trunk1[Trunk<br/>main reference doc]
-    Trunk1 --> Branch1a[Queue<br/>active work]
-    Trunk1 --> Branch1b[Handoff<br/>continuity]
-    Trunk1 --> Branch1c[Log<br/>history]
-    Branch1a --> Leaf1a1[Leaf<br/>specialised sub-doc]
-    Branch1a --> Leaf1a2[Leaf<br/>specialised sub-doc]
+    Soil["CLAUDE.md<br/>(soil - always loaded)<br/>behavioural rules"]
+    Soil --> T1[Domain A]
+    Soil --> T2[Domain B]
+    Soil --> T3[Domain C]
+    T1 --> Tr1["DOMAIN.md<br/>(trunk)"]
+    Tr1 --> Q1["QUEUE<br/>(active)"]
+    Tr1 --> H1["HANDOFF<br/>(continuity)"]
+    Tr1 --> L1["leaf<br/>(specialised)"]
+    Tr1 --> L2["leaf<br/>(specialised)"]
     classDef soil fill:#3a2e26,stroke:#8b6f4e,color:#f5e6d3
     classDef tree fill:#1f3a2e,stroke:#5e8b6f,color:#e6f5ea
     classDef trunk fill:#2e3a4e,stroke:#5e6f8b,color:#e6eaf5
     classDef branch fill:#3a2e4e,stroke:#6f5e8b,color:#eae6f5
     classDef leaf fill:#4e3a2e,stroke:#8b6f5e,color:#f5eae6
     class Soil soil
-    class Tree1,Tree2,Tree3 tree
-    class Trunk1 trunk
-    class Branch1a,Branch1b,Branch1c branch
-    class Leaf1a1,Leaf1a2 leaf
+    class T1,T2,T3 tree
+    class Tr1 trunk
+    class Q1,H1 branch
+    class L1,L2 leaf
 ```
-
-- **Soil** - `CLAUDE.md`. Always loaded. The behavioural rules that nourish every tree. Rules, not content.
-- **Tree** - a domain. Independent and self-contained, rooted in the soil.
-- **Trunk** - a domain's main reference doc (`DOMAIN.md`). The stable facts.
-- **Branches** - a domain's supporting docs (`DOMAIN_QUEUE.md`, `DOMAIN_HANDOFF.md`). What is active, what just happened.
-- **Leaves** - specialised sub-docs (`DOMAIN-TOPIC.md`). Loaded only when needed.
-
-A new domain is a new tree. A new sub-topic is a new leaf. The soil never changes shape; the forest grows around it.
 
 ---
 
-## Contributing
+## Install
 
-Atlas Method is MIT licensed and open to improvement. The methodology evolves through real use - if a rule earns its place by preventing a real failure, it belongs; if it is decoration, it does not.
+```sh
+git clone https://github.com/DamianBuilds-ai/atlas-method.git
+cd atlas-method
+sh versions/v1.1.0/bin/atlas-init ~/my-atlas
+```
 
-Open an issue to propose a change to the methodology, or a pull request against the skeleton, the docs, or the `/atlas` command. Keep the lean-by-design spirit: every addition should pay for the context it costs.
+Open `~/my-atlas` in Claude Code. Full walkthrough: [QUICKSTART.md](versions/v1.1.0/QUICKSTART.md).
+
+---
+
+## What is Atlas Method?
+
+Most people who try to run their life through an AI assistant hit the same wall: the context window. Pour everything into one giant file and the assistant reads slower, reasons worse, and eventually cannot hold it all. Split everything into a thousand files and it cannot find anything. Atlas Method resolves this with a forest of small trees.
+
+**Soil.** `CLAUDE.md` is the soil. Always loaded. Holds the behavioural rules - domain isolation, scout-first dispatch, wrap protocol, agent delegation - that every session inherits. Rules, not content. The soil never changes shape.
+
+**Trunk.** Each domain has one trunk doc (`DOMAIN.md`). The stable facts. The map of the territory. Kept under 500 lines so a session can read it whole without burning context.
+
+**Branches.** `DOMAIN_QUEUE.md` (what's active), `DOMAIN_HANDOFF.md` (continuity to the next session), `DOMAIN_LOG.md` (history). These are the load-bearing branches of every tree.
+
+**Leaves.** Specialised sub-docs (`DOMAIN-TOPIC.md`). Loaded only when needed. Capped at ~300 lines. When a leaf outgrows its cap, it splits. Growth is sideways, never upward.
+
+A new domain is a new tree. A new sub-topic is a new leaf. The forest grows around the soil.
+
+---
+
+## Agents do the work
+
+Main session orchestrates. Tiered agents do the work. Output flows back through `agent-outputs/` so context stays lean.
+
+| Tier | Model | Role |
+|------|-------|------|
+| Explorer | Haiku | Wide discovery in unknown territory |
+| Scout | Haiku | Targeted retrieval, quick lookups |
+| Setter | Haiku | Deterministic apply (insert row, set value) |
+| Analyst | Sonnet | Research, pattern finding, comparison |
+| Builder | Sonnet | Mechanical execution with verification |
+| Scribe | Sonnet | Documentation, transcription |
+| Engineer | Sonnet | Execution with local judgment calls |
+| Researcher | Sonnet | Deep multi-source investigation |
+| Architect | Sonnet | Design, ADR-level decisions |
+
+```mermaid
+graph LR
+    Main["Main Session<br/>(orchestrates + decides)"]
+    Main -->|"cheap retrieval"| Scout["Scout / Explorer<br/>(Haiku)"]
+    Main -->|"deterministic apply"| Setter["Setter<br/>(Haiku)"]
+    Main -->|"execution + judgment"| Builder["Builder / Engineer<br/>(Sonnet)"]
+    Main -->|"deep work"| Analyst["Analyst / Architect<br/>(Sonnet)"]
+    Scout --> Out["agent-outputs/<br/>YYYY-MM-DD-{tier}-{purpose}.md"]
+    Setter --> Out
+    Builder --> Out
+    Analyst --> Out
+    Out --> Main
+    classDef main fill:#3a2e26,stroke:#8b6f4e,color:#f5e6d3
+    classDef cheap fill:#1f3a2e,stroke:#5e8b6f,color:#e6f5ea
+    classDef heavy fill:#2e3a4e,stroke:#5e6f8b,color:#e6eaf5
+    classDef out fill:#4e3a2e,stroke:#8b6f5e,color:#f5eae6
+    class Main main
+    class Scout,Setter cheap
+    class Builder,Analyst heavy
+    class Out out
+```
+
+---
+
+## Scaffold a domain
+
+`/newbot` asks 4 questions and scaffolds a new domain in 2 minutes.
+
+```mermaid
+graph TD
+    Start(["/newbot"])
+    Q1["Q1: domain name?"]
+    Q2["Q2: which archetype?<br/>(7 options)"]
+    Q3["Q3: one-line description?"]
+    Q4["Q4: confirm scaffold?"]
+    Gen["Generate from template:<br/>- DOMAIN.md (trunk)<br/>- QUEUE / HANDOFF / IDEAS<br/>- /{domain} slash command"]
+    Route["Output routing snippet<br/>for CLAUDE.md paste"]
+    Done(["Domain ready<br/>~2 min total"])
+    Start --> Q1 --> Q2 --> Q3 --> Q4 --> Gen --> Route --> Done
+    classDef start fill:#3a2e26,stroke:#8b6f4e,color:#f5e6d3
+    classDef q fill:#2e3a4e,stroke:#5e6f8b,color:#e6eaf5
+    classDef gen fill:#1f3a2e,stroke:#5e8b6f,color:#e6f5ea
+    classDef done fill:#4e3a2e,stroke:#8b6f5e,color:#f5eae6
+    class Start start
+    class Q1,Q2,Q3,Q4 q
+    class Gen,Route gen
+    class Done done
+```
+
+**Seven archetypes** ship with v1.1.0:
+
+- `single-purpose` - one scope, no persona (Hermes / Drake shape)
+- `companion` - persona-led, verbatim protocol, status + handoff + personality
+- `learning-system` - topic + coursework + progress (Feynman shape)
+- `business` - product or commercial domains
+- `bot-product` - Telegram bots with Meridian framework hooks
+- `game` - game-state tracking (Warframe / EVE / OSRS shape)
+- `job-search` - opportunity dossiers + applications
+
+Pick the shape that fits, answer four questions, get a working domain with the right four-document skeleton and a wired slash command.
+
+---
+
+## What's new in v1.1.0
+
+- **`/newbot`** - interactive scaffolder, 7 archetypes, 2 minutes per new domain
+- **Wrap protocol** - 8 steps with `wrap` / `checkpoint` / `sync` cookies
+- **4 hooks** - em-dash guard, scratchpad nudge, wrap-push reminder, task-output verify
+- **Audit-only `/atlas`** - methodology turned back on itself (no auto-fixes, only neutral prompts)
+- **Tier-named agents** - Explorer / Scout / Setter / Analyst / Builder / Scribe / Engineer / Researcher / Architect
+
+Full migration guide: [MIGRATION_v1.0.0_TO_v1.1.0.md](versions/v1.1.0/MIGRATION_v1.0.0_TO_v1.1.0.md).
+Detailed changes: [CHANGELOG.md](versions/v1.1.0/CHANGELOG.md).
+
+---
+
+## Repo layout
+
+```
+atlas-method/
+├── README.md              ← you are here
+├── LICENSE                ← MIT
+└── versions/
+    ├── v1.0.0/            ← first public release
+    └── v1.1.0/            ← current
+        ├── QUICKSTART.md  ← 20-minute walkthrough
+        ├── MIGRATION_v1.0.0_TO_v1.1.0.md
+        ├── CHANGELOG.md
+        ├── bin/           ← atlas-init bootstrap script
+        ├── commands/      ← /atlas, /newbot
+        ├── docs/          ← methodology specification
+        ├── hooks/         ← 4 hook scripts + README
+        ├── procedures/    ← wrap.md and others
+        ├── skeleton/      ← four-document templates
+        ├── templates/     ← 7 archetype templates for /newbot
+        └── examples/      ← one worked domain
+```
+
+---
+
+## Philosophy
+
+**Small trees.** Context is finite. A 2,000-line document is a liability; the assistant reads it slowly and reasons over it poorly. A 200-line document is an asset. Every tree is kept small on purpose. Leaves cap at ~300 lines, trunks at ~500. When something outgrows its cap, it splits. Growth is sideways, into more small trees, never upward into one big one.
+
+**Context discipline.** The most expensive mistake an AI session can make is reading a file it did not need. Every irrelevant token spent is a relevant token it cannot spend later. Domain isolation is the law: read only what this domain needs, ask before crossing domains, and never explore to "understand the system" - the map already exists.
+
+**Scout-first.** The main conversation is the scarcest real estate in the system. Protect it. Delegate retrieval to cheap scout agents, mechanical work to builders, design to architects. Keep the main session for what only it can do: talk to you, synthesise, and decide.
+
+---
+
+## Contributing + feedback
+
+Atlas Method evolves through real use. If a rule earns its place by preventing a real failure, it belongs. If it is decoration, it does not.
+
+Open an issue to propose a methodology change, or a pull request against the skeleton, the docs, the templates, or the slash commands. Keep the lean-by-design spirit - every addition should pay for the context it costs.
+
+---
+
+## License + version
+
+MIT licensed. Public version v1.1.0 maps to internal methodology v7.5.x. Maintainer: [DamianBuilds-ai](https://github.com/DamianBuilds-ai).
 
 > **Note:** Atlas Method is the methodology, published on its own. It is intentionally separate from any individual's personal operating system or portfolio. This repo contains clean, generic templates - no personal data, no private domains. Fill it with your own.
 
----
-
-*MIT licensed. Built for Claude Code.*
+*Built for Claude Code.*

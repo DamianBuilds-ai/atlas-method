@@ -1,0 +1,413 @@
+{
+  "name": "atlas-method",
+  "version": "1.0.0",
+  "methodologyVersion": "7.5.6",
+  "license": "MIT",
+  "description": "A lean-by-design documentation methodology for running a personal operating system on Claude Code.",
+  "fileClasses": {
+    "CANONICAL": "Methodology core. Travels as-is into a user's instance and is updated from upstream. Do not hand-edit locally.",
+    "SCAFFOLD": "Templates a user copies once and then fills in. Owned by the user after instantiation; never updated from upstream.",
+    "LOCAL-ONLY": "Generated inside a user's instance and never present in this source repo (listed here for completeness)."
+  },
+  "files": [
+    {
+      "path": "README.md",
+      "class": "CANONICAL",
+      "purpose": "Repo landing page and methodology overview."
+    },
+    {
+      "path": "LICENSE",
+      "class": "CANONICAL",
+      "purpose": "MIT license."
+    },
+    {
+      "path": "versions/v1.0.0/VERSION",
+      "class": "CANONICAL",
+      "purpose": "Literal public version string."
+    },
+    {
+      "path": "versions/v1.0.0/README.md",
+      "class": "CANONICAL",
+      "purpose": "Version-specific overview: what ships, what is deferred."
+    },
+    {
+      "path": "versions/v1.0.0/CHANGELOG.md",
+      "class": "CANONICAL",
+      "purpose": "Release notes and two-track version mapping."
+    },
+    {
+      "path": "versions/v1.0.0/manifest.json",
+      "class": "CANONICAL",
+      "purpose": "This file. Version, file inventory, and per-file class."
+    },
+    {
+      "path": "versions/v1.0.0/bin/atlas-init",
+      "class": "CANONICAL",
+      "purpose": "Bootstrap script that scaffolds a fresh instance from the skeleton."
+    },
+    {
+      "path": "versions/v1.0.0/docs/ATLAS_METHOD.md",
+      "class": "CANONICAL",
+      "purpose": "The methodology specification."
+    },
+    {
+      "path": "versions/v1.0.0/docs/AGENT-PATTERNS.md",
+      "class": "CANONICAL",
+      "purpose": "Agent delegation tiers and discipline rules."
+    },
+    {
+      "path": "versions/v1.0.0/docs/DOC-PROTOCOL.md",
+      "class": "CANONICAL",
+      "purpose": "Documentation protocol: how trees grow, split, and are named."
+    },
+    {
+      "path": "versions/v1.0.0/docs/HOOKS.md",
+      "class": "CANONICAL",
+      "purpose": "Reference for the hook system and agent-prelude injection."
+    },
+    {
+      "path": "versions/v1.0.0/commands/atlas.md",
+      "class": "CANONICAL",
+      "purpose": "The /atlas self-audit command definition."
+    },
+    {
+      "path": "versions/v1.0.0/hooks/pre-read-hook.sh",
+      "class": "CANONICAL",
+      "purpose": "Pre-read hook."
+    },
+    {
+      "path": "versions/v1.0.0/hooks/agent-rules-inject.sh",
+      "class": "CANONICAL",
+      "purpose": "Injects the agent prelude into spawned agents."
+    },
+    {
+      "path": "versions/v1.0.0/hooks/agent-prelude/universal.txt",
+      "class": "CANONICAL",
+      "purpose": "Universal agent rules injected into every dispatch."
+    },
+    {
+      "path": "versions/v1.0.0/hooks/agent-prelude/safety.txt",
+      "class": "CANONICAL",
+      "purpose": "Safety prohibitions injected into every dispatch."
+    },
+    {
+      "path": "versions/v1.0.0/procedures/fragile-verification.md",
+      "class": "CANONICAL",
+      "purpose": "Playbook for verifying before changing fragile state."
+    },
+    {
+      "path": "versions/v1.0.0/procedures/leaf-creation.md",
+      "class": "CANONICAL",
+      "purpose": "Playbook for extracting a leaf doc from a growing trunk."
+    },
+    {
+      "path": "versions/v1.0.0/skeleton/CLAUDE.md.template",
+      "class": "SCAFFOLD",
+      "purpose": "The soil template: behavioural rules a user fills in for their own system."
+    },
+    {
+      "path": "versions/v1.0.0/skeleton/DOMAIN.md.template",
+      "class": "SCAFFOLD",
+      "purpose": "Trunk template: a domain's reference doc."
+    },
+    {
+      "path": "versions/v1.0.0/skeleton/DOMAIN_QUEUE.md.template",
+      "class": "SCAFFOLD",
+      "purpose": "Queue template: a domain's active work."
+    },
+    {
+      "path": "versions/v1.0.0/skeleton/DOMAIN_HANDOFF.md.template",
+      "class": "SCAFFOLD",
+      "purpose": "Handoff template: session-to-session message."
+    },
+    {
+      "path": "versions/v1.0.0/skeleton/DOMAIN_IDEAS.md.template",
+      "class": "SCAFFOLD",
+      "purpose": "Ideas template: a domain's parking lot."
+    },
+    {
+      "path": "versions/v1.0.0/examples/example-domain/READING.md",
+      "class": "CANONICAL",
+      "purpose": "Worked example trunk for an illustrative Reading domain."
+    },
+    {
+      "path": "versions/v1.0.0/examples/example-domain/READING_QUEUE.md",
+      "class": "CANONICAL",
+      "purpose": "Worked example queue."
+    },
+    {
+      "path": "versions/v1.0.0/examples/example-domain/READING_HANDOFF.md",
+      "class": "CANONICAL",
+      "purpose": "Worked example handoff."
+    },
+    {
+      "path": "versions/v1.0.0/examples/example-domain/READING_IDEAS.md",
+      "class": "CANONICAL",
+      "purpose": "Worked example ideas parking lot."
+    },
+    {
+      "path": "versions/v1.1.0/hooks/no-em-dash.sh",
+      "class": "CANONICAL",
+      "purpose": "PostToolUse hook: auto-replaces em-dashes (U+2014) with \" - \" in any Write/Edit/MultiEdit file write."
+    },
+    {
+      "path": "versions/v1.1.0/hooks/scratchpad-update-nudge.sh",
+      "class": "CANONICAL",
+      "purpose": "UserPromptSubmit hook: every Nth turn, nudges Claude to refresh the working scratchpad (non-blocking)."
+    },
+    {
+      "path": "versions/v1.1.0/hooks/wrap-push-reminder.sh",
+      "class": "CANONICAL",
+      "purpose": "Stop hook: when wrap intent is detected, warns if the repo has uncommitted changes or unpushed commits."
+    },
+    {
+      "path": "versions/v1.1.0/hooks/task-output-verify.sh",
+      "class": "CANONICAL",
+      "purpose": "PostToolUse:Task hook: verifies agent-claimed output files exist with non-trivial content, warns on misses."
+    },
+    {
+      "path": "versions/v1.1.0/hooks/README.md",
+      "class": "CANONICAL",
+      "purpose": "Hook system reference: event/matcher/env vars/settings.json wiring for the v1.1.0 hooks."
+    },
+    {
+      "path": "versions/v1.1.0/commands/newbot.md",
+      "class": "CANONICAL",
+      "purpose": "The /newbot slash command: interactive flow that scaffolds a new domain from one of seven archetypes."
+    },
+    {
+      "path": "versions/v1.1.0/docs/NEWBOT-PROTOCOL.md",
+      "class": "CANONICAL",
+      "purpose": "Full protocol behind /newbot: archetype taxonomy, scaffold details, root-file updates, verification, pitfalls."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/single-purpose/trunk.md",
+      "class": "SCAFFOLD",
+      "purpose": "Single-purpose archetype trunk template - durable reference doc with {DOMAIN} placeholders."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/single-purpose/queue.md",
+      "class": "SCAFFOLD",
+      "purpose": "Single-purpose archetype queue template - active work with {DOMAIN} placeholders."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/single-purpose/commands/slash-command.md",
+      "class": "SCAFFOLD",
+      "purpose": "Single-purpose archetype slash command template - read list, opener, wrap pointer with {DOMAIN} and {SLASH_NAME} placeholders. Renamed by /newbot to commands/{SLASH_NAME}.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/job-search/trunk.md",
+      "class": "SCAFFOLD",
+      "purpose": "Job-search archetype trunk template - hunt strategy, target market, pipeline conventions, leaf index with {DOMAIN} placeholders."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/job-search/queue.md",
+      "class": "SCAFFOLD",
+      "purpose": "Job-search archetype queue template - hunt-level active work with funnel snapshot and pointers to applications + leaves."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/job-search/handoff.md",
+      "class": "SCAFFOLD",
+      "purpose": "Job-search archetype handoff template - session-to-session bridge with what was done, in flight, blocked, and pipeline snapshot."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/job-search/applications.md",
+      "class": "SCAFFOLD",
+      "purpose": "Job-search archetype applications template - live pipeline dashboard with one table per stage (leads, applied, screening, interviewing, offers, closed)."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/job-search/career.md",
+      "class": "SCAFFOLD",
+      "purpose": "Job-search archetype career template - positioning, through-line, voice, resume variants, talking points, recurring application facts, network roster."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/job-search/opportunity-template.md",
+      "class": "SCAFFOLD",
+      "purpose": "Job-search archetype per-opportunity leaf template - copied per company to {DOMAIN}-{COMPANY}-OPPORTUNITY.md. Holds role snapshot, contacts, interview log, materials, decision factors, outcome."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/job-search/commands/slash-command.md",
+      "class": "SCAFFOLD",
+      "purpose": "Job-search archetype slash command template - read list (queue + applications + handoff always; trunk + career on demand; opportunity leaves on company-name trigger), session modes, wrap specifics. Renamed by /newbot to commands/{SLASH_NAME}.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/business/trunk.md",
+      "class": "SCAFFOLD",
+      "purpose": "Business archetype trunk template - brand, ICP pointer, offer surface, channels, conventions with {DOMAIN} placeholders."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/business/queue.md",
+      "class": "SCAFFOLD",
+      "purpose": "Business archetype queue template - Quick Resume, Pipeline, Active Campaigns, This Session with {DOMAIN} placeholders."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/business/handoff.md",
+      "class": "SCAFFOLD",
+      "purpose": "Business archetype handoff template - session-to-session message with Latest block and prior session log."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/business/icp.md",
+      "class": "SCAFFOLD",
+      "purpose": "Business archetype ideal customer profile template - primary segment, pain points, jobs-to-be-done, qualifiers, disqualifiers, voice."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/business/commands/slash-command.md",
+      "class": "SCAFFOLD",
+      "purpose": "Business archetype slash command template - read list, mode-based workstream leaf loading, opener with {DOMAIN} and {SLASH_NAME} placeholders."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/business/workstream-template.md",
+      "class": "SCAFFOLD",
+      "purpose": "Business archetype per-workstream leaf template - operating cadence, playbooks, assets, metrics, decisions with {DOMAIN} and {WORKSTREAM} placeholders."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/game/trunk.md",
+      "class": "SCAFFOLD",
+      "purpose": "Game archetype trunk template - reference doc with branch-file map and {DOMAIN} placeholders. For MMO / RPG / long-running game trackers."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/game/status.md",
+      "class": "SCAFFOLD",
+      "purpose": "Game archetype status template - current character / account state: level, gear, location, active threads."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/game/goals.md",
+      "class": "SCAFFOLD",
+      "purpose": "Game archetype goals template - long-term targets and short-term sub-goals with progress tracking."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/game/collection.md",
+      "class": "SCAFFOLD",
+      "purpose": "Game archetype collection template - items, achievements, kill logs, wishlist tracking."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/game/knowledge.md",
+      "class": "SCAFFOLD",
+      "purpose": "Game archetype knowledge template - mechanics, builds, encounter notes, market reasoning reference."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/game/handoff.md",
+      "class": "SCAFFOLD",
+      "purpose": "Game archetype handoff template - between-session continuity for play and planning sessions."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/game/commands/slash-command.md",
+      "class": "SCAFFOLD",
+      "purpose": "Game archetype slash command template - read list with always-on STATUS+HANDOFF, on-demand branches, common session shapes. Renamed by /newbot to commands/{SLASH_NAME}.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/game/log.md",
+      "class": "SCAFFOLD",
+      "purpose": "Game archetype log template - rotated history from Recently Completed when it grows past five. Renamed by /newbot to {DOMAIN}_LOG.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/business/log.md",
+      "class": "SCAFFOLD",
+      "purpose": "Business archetype log template - rotated history from Recently Completed when it grows past five. Renamed by /newbot to {DOMAIN}_LOG.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/companion/personality.md",
+      "class": "SCAFFOLD",
+      "purpose": "Companion archetype personality template - voice lock with identity, tone, banned phrases, speech patterns, and five voice anchors. Append-only after first real session. Renamed by /newbot to {DOMAIN}_PERSONALITY.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/companion/status.md",
+      "class": "SCAFFOLD",
+      "purpose": "Companion archetype status template - living state of the user (mode, active threads, recent decisions, what NOT to bring up). Renamed by /newbot to {DOMAIN}_STATUS.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/companion/queue.md",
+      "class": "SCAFFOLD",
+      "purpose": "Companion archetype queue template - lighter than operational queue, holds session intent + active threads + follow-ups. Renamed by /newbot to {DOMAIN}_QUEUE.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/companion/handoff.md",
+      "class": "SCAFFOLD",
+      "purpose": "Companion archetype handoff template - what we talked about, what landed, what is being held, voice notes, for next session. Renamed by /newbot to {DOMAIN}_HANDOFF.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/companion/trunk.md",
+      "class": "SCAFFOLD",
+      "purpose": "Companion archetype trunk template - durable structure with file map, voice-lock pointer, session flow, conventions, leaf index. Renamed by /newbot to {DOMAIN}.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/companion/log.md",
+      "class": "SCAFFOLD",
+      "purpose": "Companion archetype log template - rotated history from Recently Completed when it grows past five. Renamed by /newbot to {DOMAIN}_LOG.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/companion/commands/slash-command.md",
+      "class": "SCAFFOLD",
+      "purpose": "Companion archetype slash command template - persona-led session opener, voice discipline, verbatim protocol pointer, wrap protocol. Renamed by /newbot to commands/{SLASH_NAME}.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/learning-system/trunk.md",
+      "class": "SCAFFOLD",
+      "purpose": "Learning-system archetype trunk template - durable reference doc for a topic-progression learning effort with {DOMAIN} placeholders. Renamed by /newbot to {DOMAIN}.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/learning-system/topic.md",
+      "class": "SCAFFOLD",
+      "purpose": "Learning-system archetype curriculum template - holds the full topic map, reading list, and module structure. Renamed by /newbot to {DOMAIN}_TOPIC.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/learning-system/coursework.md",
+      "class": "SCAFFOLD",
+      "purpose": "Learning-system archetype coursework template - per-lesson and per-exercise tracking. Renamed by /newbot to {DOMAIN}_COURSEWORK.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/learning-system/progress.md",
+      "class": "SCAFFOLD",
+      "purpose": "Learning-system archetype progress log template - running session log of what has been covered and what is next. Renamed by /newbot to {DOMAIN}_PROGRESS.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/learning-system/queue.md",
+      "class": "SCAFFOLD",
+      "purpose": "Learning-system archetype queue template - active sessions and immediate next actions. Renamed by /newbot to {DOMAIN}_QUEUE.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/learning-system/log.md",
+      "class": "SCAFFOLD",
+      "purpose": "Learning-system archetype log template - rotated history from Recently Completed when it grows past five. Renamed by /newbot to {DOMAIN}_LOG.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/learning-system/commands/slash-command.md",
+      "class": "SCAFFOLD",
+      "purpose": "Learning-system archetype slash command template - read list, study session shape, wrap pointer with {DOMAIN} and {SLASH_NAME} placeholders. Renamed by /newbot to commands/{SLASH_NAME}.md."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/bot-product/trunk.md",
+      "class": "SCAFFOLD",
+      "purpose": "Bot-product archetype trunk template - reference doc for a live operational system with architecture-at-a-glance, key references, operating cadence."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/bot-product/queue.md",
+      "class": "SCAFFOLD",
+      "purpose": "Bot-product archetype queue template - active work with deploy-state Quick Resume and Incidents section."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/bot-product/handoff.md",
+      "class": "SCAFFOLD",
+      "purpose": "Bot-product archetype handoff template - session-to-session continuity with shipped/in-flight/blocked split and ops-state notes."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/bot-product/product-spec.md",
+      "class": "SCAFFOLD",
+      "purpose": "Bot-product archetype product spec template - features, users, surfaces, config, data model, roadmap, non-goals. The WHAT side."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/bot-product/ops.md",
+      "class": "SCAFFOLD",
+      "purpose": "Bot-product archetype ops template - deploy target, runtime config, dependencies, monitoring, operational tasks, backup/recovery, postmortems. The HOW side."
+    },
+    {
+      "path": "versions/v1.1.0/templates/newbot/bot-product/commands/slash-command.md",
+      "class": "SCAFFOLD",
+      "purpose": "Bot-product archetype slash command template - mode-aware read list (QUEUE/HANDOFF always, SPEC/OPS on demand) and ops-priority opener."
+    }
+  ],
+  "localOnly": [
+    "CLAUDE.md (instantiated from skeleton in a user's instance)",
+    "{DOMAIN}.md and its branches (instantiated per domain by the user)"
+  ]
+}
