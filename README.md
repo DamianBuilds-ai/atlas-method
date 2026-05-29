@@ -2,7 +2,7 @@
 
 *Lean-by-design methodology for running your life through Claude Code.*
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Version](https://img.shields.io/github/v/release/DamianBuilds-ai/atlas-method)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Templates](https://img.shields.io/badge/templates-7%20archetypes-orange)
 ![Agents](https://img.shields.io/badge/agents-9%20tiers-purple)
