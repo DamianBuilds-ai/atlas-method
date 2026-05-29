@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 #
+# wrap-push-reminder.sh - Stop hook
+# Reminds you to git push when wrap intent detected in session.
+# v1.1.2 (2026-05-29): added REPO_ROOT validity guard (Casey Windows feedback).
+# Requires REPO_ROOT env var pointing at a git repo. Skip silently if not set.
+#
 # Hook: wrap-push-reminder
 # Event: Stop
 # Purpose: When wrap intent is detected in the recent transcript, verify that the
@@ -46,6 +51,14 @@ fi
 
 REPO_ROOT="${REPO_ROOT:-$PWD}"
 DEFAULT_BRANCH="${WRAP_DEFAULT_BRANCH:-main}"
+
+# v1.1.2: guard against missing REPO_ROOT (Windows + edge cases)
+# Casey feedback 2026-05-29: bash cd silently fails on path semantic mismatch
+if [ -z "${REPO_ROOT:-}" ] || [ ! -d "$REPO_ROOT" ]; then
+  # REPO_ROOT not set or doesn't exist as a dir - skip git check silently
+  # User can set REPO_ROOT explicitly to enable wrap-push reminder
+  exit 0
+fi
 
 cd "$REPO_ROOT" 2>/dev/null || exit 0
 

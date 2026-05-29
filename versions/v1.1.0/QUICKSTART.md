@@ -4,6 +4,17 @@ Get from clone to first wrap in under twenty minutes. Every step here is concret
 
 ---
 
+## Prerequisites
+
+- **jq** - JSON parser used by all 4 hooks. Install per OS:
+  - macOS: `brew install jq`
+  - Linux: `sudo apt-get install jq` or equivalent
+  - Windows: `winget install jqlang.jq`
+- **bash** - hooks are bash scripts. Mac/Linux ship with it. Windows: use Git Bash (bundled with Git for Windows) or WSL.
+- **git + gh** - for repo operations + GitHub Release creation per the REPO UPDATE METADATA discipline.
+
+---
+
 ## Step 1 - Clone and pick a target directory
 
 The repo holds the methodology. Your actual Atlas Method instance (CLAUDE.md, your domain files) lives somewhere else - typically `~/my-atlas` or any directory you open in Claude Code.
@@ -187,6 +198,22 @@ Run `/atlas`. It audits your system against the size thresholds and surfaces dri
 
 **Q: What if I want to undo and start over?**
 Delete the files in `~/my-atlas`, re-run `sh versions/v1.1.0/bin/atlas-init ~/my-atlas`. Nothing in the public repo gets modified - your instance is fully separate.
+
+---
+
+## Windows-specific notes
+
+If you're on Windows, a few quirks worth knowing:
+
+- **Paths:** use forward slashes in Atlas paths (e.g. `C:/Users/yourname/atlas` not `C:\Users\yourname\atlas`). Bash interprets backslashes as escape characters.
+- **Env vars:** set ATLAS_HOME and REPO_ROOT as persistent User env vars via `setx`:
+  ```
+  setx ATLAS_HOME "C:/Users/yourname/atlas-method"
+  setx REPO_ROOT "C:/Users/yourname/your-system-repo"
+  ```
+- **Shell:** hooks assume bash. Use Git Bash (bundled with Git for Windows) when running Claude Code, or set up WSL.
+- **jq install:** `winget install jqlang.jq` (Windows Package Manager) - this is mandatory for hooks to execute.
+- **Hook wiring:** Claude Code does NOT expand `$ATLAS_HOME` in hook commands at exec time. When wiring hooks in `~/.claude/settings.json`, use the literal absolute path (e.g. `C:/Users/yourname/atlas-method/versions/v1.1.0/hooks/no-em-dash.sh`). Otherwise hooks fail silently with "No such file or directory" errors.
 
 ---
 

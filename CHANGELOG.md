@@ -6,6 +6,34 @@ This project uses two-track versioning. The **public** version (this repo) and t
 
 The format follows the spirit of Keep a Changelog, and the public track adheres to Semantic Versioning.
 
+## [1.1.2] - 2026-05-29
+
+### Added
+- Prerequisites section in QUICKSTART.md, MIGRATION_v1.0.0_TO_v1.1.0.md, and hooks/README.md documenting jq as a required dependency (install commands per OS: brew install jq, sudo apt-get install jq, winget install jqlang.jq)
+- Windows-specific notes section in QUICKSTART.md covering path conventions, persistent env var setup via setx, and shell requirements (Git Bash or WSL)
+
+### Fixed
+- wrap-push-reminder.sh: added REPO_ROOT validity guard. Previously cd $REPO_ROOT could fail silently on Windows path semantics or when REPO_ROOT was unset, causing non-blocking error noise. Now exits cleanly when REPO_ROOT is missing or invalid.
+
+### Notes
+- Thanks to Casey for the Windows install feedback that surfaced these 3 gaps.
+- v1.0.0 + v1.1.0 + v1.1.1 trees unchanged. Only the v1.1.0 working tree (QUICKSTART, MIGRATION, hooks/) was modified in-place per the v1.1.x patch pattern.
+
+## [1.1.1] - 2026-05-28
+
+### Added
+- Root VERSION file (1.1.0 methodology version, not tag-level patch number)
+- GitHub Release object backfilled for v1.1.0 with full release notes
+- GitHub Release object created for v1.1.1
+- FOUNDRY-PERMANENT RULE captured in deploy artifacts: every Foundry push that cuts a tag must include release notes via gh release create --notes-file, AND verify the Release object renders post-push
+
+### Fixed
+- manifest.json .version field: corrected 1.0.0 to 1.1.0 (drift from v1.0.0 clone)
+
+### Notes
+- v1.0.0 + v1.1.0 trees unchanged. Only top-level files (VERSION, manifest.json metadata) modified.
+- Polish-only patch surfaced by post-deploy verification of v1.1.0.
+
 ## [1.1.0] - 2026-05-28
 
 ### Added

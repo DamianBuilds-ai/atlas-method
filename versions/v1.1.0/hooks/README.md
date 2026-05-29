@@ -4,6 +4,17 @@ Claude Code hooks are shell scripts that fire on lifecycle events (PreToolUse, P
 
 This directory ships the canonical hooks for the Atlas Method. Wire them in your `~/.claude/settings.json` (or per-project `.claude/settings.json`) to get them firing.
 
+## Prerequisites
+
+All 4 hooks parse JSON via `jq`. Install before wiring:
+- macOS: `brew install jq`
+- Linux: `sudo apt-get install jq` (or distro equivalent)
+- Windows: `winget install jqlang.jq`
+
+Hooks will appear to "work" in settings.json but produce empty output if jq is missing. Test with: `echo '{"test":true}' | jq -r '.test'` - should print `true`.
+
+Also: hooks assume bash. On Windows use Git Bash or WSL.
+
 ## Conventions
 
 - Every hook expects `jq` on `$PATH`. macOS and most Linux distros ship it.
@@ -24,6 +35,12 @@ This directory ships the canonical hooks for the Atlas Method. Wire them in your
 
 **Env:**
 - `ATLAS_HOME` (default `$PWD`) - root of your instance, used to place the autofix log.
+
+> **IMPORTANT - Claude Code does NOT expand env vars in hook commands.**
+> Use ABSOLUTE PATHS in your `~/.claude/settings.json`. The template below shows `$ATLAS_HOME` as a placeholder for readability - replace it with your actual atlas-method path before pasting. Otherwise hooks fail silently with "No such file or directory" errors at exec time.
+> Examples:
+> - macOS/Linux: `/Users/yourname/atlas-method/versions/v1.1.0/hooks/no-em-dash.sh`
+> - Windows (Git Bash): `C:/Users/yourname/atlas-method/versions/v1.1.0/hooks/no-em-dash.sh`
 
 **Settings snippet:**
 

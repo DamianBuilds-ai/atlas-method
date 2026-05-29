@@ -8,6 +8,15 @@ v1.1.0 is the first real extension release on top of v1.0.0. The headline shift 
 
 Update if you want cleaner domain scaffolding, a documented wrap protocol, the em-dash chat rule, or the new hooks.
 
+## Prerequisites check (do this first)
+
+The 4 hooks bundled in v1.1.0 require `jq`. Verify before wiring:
+- macOS: `brew install jq` (if `jq --version` fails)
+- Linux: `sudo apt-get install jq`
+- Windows: `winget install jqlang.jq` (Windows Package Manager required)
+
+If jq is missing the hooks will fail silently on every prompt - settings.json wiring succeeds but hook output is empty. Install jq before proceeding to the wiring step.
+
 ## Update steps (walk user through these)
 
 Run these in order. Confirm each one before moving on.
