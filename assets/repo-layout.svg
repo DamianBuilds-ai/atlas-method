@@ -20,7 +20,7 @@
   <g filter="url(#ds)"><rect x="48" y="56" width="844" height="446" rx="12" fill="#11203f" stroke="#2f4a6b" stroke-width="1"/></g>
 
   <!-- faint vertical guide separating path column from comment column (centered in gutter) -->
-  <line x1="487" y1="69" x2="487" y2="459" stroke="#1c3350" stroke-width="1"/>
+  <line x1="487" y1="100" x2="487" y2="486" stroke="#1c3350" stroke-width="1"/>
 
   <!-- tree connector strokes (explicit elbows; no glyph characters) -->
   <!-- depth1 guide: children of atlas-method/ are README.md(y115), LICENSE(y139), versions/(y163, last) -->
