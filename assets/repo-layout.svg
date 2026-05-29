@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 560" width="940" height="560">
+  <defs>
+    <filter id="ds" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#16304d" opacity="0.55"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a5573"/>
+    </marker>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="939" height="559" rx="14" fill="#0a1420" stroke="#1c3350" stroke-width="1"/>
+  <rect x="0.5" y="0.5" width="939" height="559" rx="14" fill="url(#dots)"/>
+
+  <text x="24" y="30" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="10" letter-spacing="1.5" fill="#2f6b7a">ATLAS METHOD&#160;&#160;|&#160;&#160;REPO LAYOUT</text>
+
+  <!-- panel card -->
+  <g filter="url(#ds)"><rect x="48" y="56" width="844" height="446" rx="12" fill="#11203f" stroke="#2f4a6b" stroke-width="1"/></g>
+
+  <!-- faint vertical guide separating path column from comment column -->
+  <line x1="458" y1="84" x2="458" y2="474" stroke="#1c3350" stroke-width="1"/>
+
+  <!-- tree connector strokes (explicit elbows; no glyph characters) -->
+  <!-- depth1 guide: children of atlas-method/ are README.md(y130), LICENSE(y154), versions/(y178, last) -->
+  <g fill="none" stroke="#5a7799" stroke-width="1.3">
+    <!-- depth1 vertical from root row down to last child (versions/) -->
+    <path d="M 88 112 L 88 174"/>
+    <path d="M 88 126 L 100 126"/>
+    <path d="M 88 150 L 100 150"/>
+    <path d="M 88 174 L 100 174"/>
+
+    <!-- depth2 guide: children of versions/ are v1.0.0/(y202), v1.1.0/(y226, last) -->
+    <path d="M 118 184 L 118 222"/>
+    <path d="M 118 198 L 130 198"/>
+    <path d="M 118 222 L 130 222"/>
+
+    <!-- depth3 guide: children of v1.1.0/ are QUICKSTART.md ... examples/(y490, last) -->
+    <path d="M 148 232 L 148 486"/>
+    <path d="M 148 246 L 160 246"/>
+    <path d="M 148 270 L 160 270"/>
+    <path d="M 148 294 L 160 294"/>
+    <path d="M 148 318 L 160 318"/>
+    <path d="M 148 342 L 160 342"/>
+    <path d="M 148 366 L 160 366"/>
+    <path d="M 148 390 L 160 390"/>
+    <path d="M 148 414 L 160 414"/>
+    <path d="M 148 438 L 160 438"/>
+    <path d="M 148 462 L 160 462"/>
+    <path d="M 148 486 L 160 486"/>
+  </g>
+
+  <!-- tree labels: explicit x by depth (76 / 106 / 136 / 166). dirs cyan, files light. -->
+  <g font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="15" letter-spacing="0.5">
+    <!-- depth 0 -->
+    <text x="76" y="106" fill="#22D3EE">atlas-method/</text>
+
+    <!-- depth 1 -->
+    <text x="106" y="130" fill="#E6EDF7">README.md</text>
+    <text x="106" y="154" fill="#E6EDF7">LICENSE</text>
+    <text x="106" y="178" fill="#22D3EE">versions/</text>
+
+    <!-- depth 2 -->
+    <text x="136" y="202" fill="#22D3EE">v1.0.0/</text>
+    <text x="136" y="226" fill="#22D3EE">v1.1.0/</text>
+
+    <!-- depth 3 -->
+    <text x="166" y="250" fill="#E6EDF7">QUICKSTART.md</text>
+    <text x="166" y="274" fill="#E6EDF7">MIGRATION_v1.0.0_TO_v1.1.0.md</text>
+    <text x="166" y="298" fill="#E6EDF7">CHANGELOG.md</text>
+    <text x="166" y="322" fill="#22D3EE">bin/</text>
+    <text x="166" y="346" fill="#22D3EE">commands/</text>
+    <text x="166" y="370" fill="#22D3EE">docs/</text>
+    <text x="166" y="394" fill="#22D3EE">hooks/</text>
+    <text x="166" y="418" fill="#22D3EE">procedures/</text>
+    <text x="166" y="442" fill="#22D3EE">skeleton/</text>
+    <text x="166" y="466" fill="#22D3EE">templates/</text>
+    <text x="166" y="490" fill="#22D3EE">examples/</text>
+  </g>
+
+  <!-- comment column: fixed x=470, marker glyph + text. dim gold, except "you are here" accent cyan. -->
+  <g font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="15" letter-spacing="0.5">
+    <text x="470" y="130" fill="#22D3EE">&#9656;&#160;you are here</text>
+    <text x="470" y="154" fill="#C99A3A">&#9656;&#160;MIT</text>
+    <text x="470" y="202" fill="#C99A3A">&#9656;&#160;first public release</text>
+    <text x="470" y="226" fill="#C99A3A">&#9656;&#160;current</text>
+    <text x="470" y="250" fill="#C99A3A">&#9656;&#160;20-minute walkthrough</text>
+    <text x="470" y="322" fill="#C99A3A">&#9656;&#160;atlas-init bootstrap script</text>
+    <text x="470" y="346" fill="#C99A3A">&#9656;&#160;/atlas, /newbot</text>
+    <text x="470" y="370" fill="#C99A3A">&#9656;&#160;methodology specification</text>
+    <text x="470" y="394" fill="#C99A3A">&#9656;&#160;4 hook scripts + README</text>
+    <text x="470" y="418" fill="#C99A3A">&#9656;&#160;wrap.md and others</text>
+    <text x="470" y="442" fill="#C99A3A">&#9656;&#160;four-document templates</text>
+    <text x="470" y="466" fill="#C99A3A">&#9656;&#160;7 archetype templates for /newbot</text>
+    <text x="470" y="490" fill="#C99A3A">&#9656;&#160;one worked domain</text>
+  </g>
+</svg>

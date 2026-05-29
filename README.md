@@ -105,25 +105,9 @@ Detailed changes: [CHANGELOG.md](versions/v1.1.0/CHANGELOG.md).
 
 ## Repo layout
 
-```
-atlas-method/
-├── README.md              ← you are here
-├── LICENSE                ← MIT
-└── versions/
-    ├── v1.0.0/            ← first public release
-    └── v1.1.0/            ← current
-        ├── QUICKSTART.md  ← 20-minute walkthrough
-        ├── MIGRATION_v1.0.0_TO_v1.1.0.md
-        ├── CHANGELOG.md
-        ├── bin/           ← atlas-init bootstrap script
-        ├── commands/      ← /atlas, /newbot
-        ├── docs/          ← methodology specification
-        ├── hooks/         ← 4 hook scripts + README
-        ├── procedures/    ← wrap.md and others
-        ├── skeleton/      ← four-document templates
-        ├── templates/     ← 7 archetype templates for /newbot
-        └── examples/      ← one worked domain
-```
+<div align="center">
+  <img src="assets/repo-layout.svg" width="800" alt="Atlas Method repository layout: a file tree showing atlas-method/ at the root, with README.md, LICENSE, and versions/ beneath it; versions/ contains v1.0.0/ and v1.1.0/; v1.1.0/ holds QUICKSTART.md, MIGRATION and CHANGELOG files, plus bin/, commands/, docs/, hooks/, procedures/, skeleton/, templates/, and examples/ directories, each annotated with a short comment." />
+</div>
 
 ---
 

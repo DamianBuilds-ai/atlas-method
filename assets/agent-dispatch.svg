@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 540" width="860" height="540">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 580" width="940" height="580">
   <defs>
     <filter id="ds" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.45"/>
@@ -11,79 +11,79 @@
     </marker>
   </defs>
 
-  <rect x="0.5" y="0.5" width="859" height="539" rx="14" fill="#0a1420" stroke="#1c3350" stroke-width="1"/>
-  <rect x="0.5" y="0.5" width="859" height="539" rx="14" fill="url(#dots)"/>
+  <rect x="0.5" y="0.5" width="939" height="579" rx="14" fill="#0a1420" stroke="#1c3350" stroke-width="1"/>
+  <rect x="0.5" y="0.5" width="939" height="579" rx="14" fill="url(#dots)"/>
 
   <text x="24" y="30" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="10" letter-spacing="1.5" fill="#2f6b7a">ATLAS METHOD&#160;&#160;|&#160;&#160;AGENT DISPATCH</text>
 
-  <!-- edges: Main to middle column -->
+  <!-- edges: Main (right edge x225, y268) to middle column left-center (x400) -->
   <g fill="none" stroke="#3a5573" stroke-width="1.5" marker-end="url(#arrow)">
-    <path d="M 200 195 C 265 150, 270 110, 330 100"/>
-    <path d="M 200 215 C 265 195, 270 195, 330 205"/>
-    <path d="M 200 235 C 265 270, 270 290, 330 310"/>
-    <path d="M 200 255 C 265 350, 270 400, 330 415"/>
-    <!-- middle to Out -->
-    <path d="M 540 100 C 600 110, 605 195, 650 205"/>
-    <path d="M 540 205 C 600 207, 605 207, 650 222"/>
-    <path d="M 540 310 C 600 300, 605 250, 650 240"/>
-    <path d="M 540 415 C 600 400, 605 270, 650 252"/>
+    <path d="M 225 250 C 300 200, 320 150, 400 136"/>
+    <path d="M 225 260 C 300 248, 320 230, 400 224"/>
+    <path d="M 225 276 C 300 288, 320 308, 400 312"/>
+    <path d="M 225 286 C 300 340, 320 388, 400 400"/>
+    <!-- middle (right edge x620) to Out left-center (x715, y268) -->
+    <path d="M 620 136 C 670 150, 680 248, 715 258"/>
+    <path d="M 620 224 C 670 232, 680 258, 715 264"/>
+    <path d="M 620 312 C 670 304, 680 280, 715 274"/>
+    <path d="M 620 400 C 670 360, 680 290, 715 280"/>
   </g>
 
-  <!-- return edge: Out to Main along bottom -->
-  <path d="M 745 270 C 745 490, 110 490, 110 270" fill="none" stroke="#3a5573" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <!-- return edge: Out bottom to Main bottom, routed well below all nodes -->
+  <path d="M 817 323 C 817 500, 132 500, 132 323" fill="none" stroke="#3a5573" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
 
-  <!-- edge label chips -->
+  <!-- edge label chips: centered around x=312, sized to text -->
   <g font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="11" fill="#93AECB" text-anchor="middle">
-    <rect x="232" y="120" width="96" height="20" rx="6" fill="#0a1420"/>
-    <text x="280" y="134">cheap retrieval</text>
-    <rect x="206" y="183" width="114" height="20" rx="6" fill="#0a1420"/>
-    <text x="263" y="197">deterministic apply</text>
-    <rect x="200" y="262" width="124" height="20" rx="6" fill="#0a1420"/>
-    <text x="262" y="276">execution + judgment</text>
-    <rect x="244" y="342" width="72" height="20" rx="6" fill="#0a1420"/>
-    <text x="280" y="356">deep work</text>
+    <rect x="258" y="156" width="108" height="20" rx="6" fill="#0a1420"/>
+    <text x="312" y="170">cheap retrieval</text>
+    <rect x="245" y="226" width="134" height="20" rx="6" fill="#0a1420"/>
+    <text x="312" y="240">deterministic apply</text>
+    <rect x="238" y="306" width="148" height="20" rx="6" fill="#0a1420"/>
+    <text x="312" y="320">execution + judgment</text>
+    <rect x="272" y="376" width="80" height="20" rx="6" fill="#0a1420"/>
+    <text x="312" y="390">deep work</text>
   </g>
 
-  <!-- MAIN node (cyan, tall) -->
-  <g filter="url(#ds)"><rect x="30" y="170" width="170" height="110" rx="10" fill="#0e2733" stroke="#22D3EE" stroke-width="2"/></g>
-  <text x="115" y="218" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Main Session</text>
-  <text x="115" y="238" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">orchestrates</text>
-  <text x="115" y="252" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">+ decides</text>
+  <!-- MAIN node (cyan, tall) center y=268 -->
+  <g filter="url(#ds)"><rect x="40" y="213" width="185" height="110" rx="10" fill="#0e2733" stroke="#22D3EE" stroke-width="2"/></g>
+  <text x="132" y="261" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Main Session</text>
+  <text x="132" y="281" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">orchestrates</text>
+  <text x="132" y="295" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">+ decides</text>
 
-  <!-- MIDDLE column -->
-  <!-- Scout (green) -->
-  <g filter="url(#ds)"><rect x="330" y="70" width="210" height="60" rx="10" fill="#0e2920" stroke="#34D399" stroke-width="2"/></g>
-  <text x="435" y="95" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Scout / Explorer</text>
-  <text x="435" y="113" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(Haiku)</text>
+  <!-- MIDDLE column, group center y=268, 28px gaps -->
+  <!-- Scout (green) y=106..166 -->
+  <g filter="url(#ds)"><rect x="400" y="106" width="220" height="60" rx="10" fill="#0e2920" stroke="#34D399" stroke-width="2"/></g>
+  <text x="510" y="131" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Scout / Explorer</text>
+  <text x="510" y="149" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(Haiku)</text>
 
-  <!-- Setter (green) -->
-  <g filter="url(#ds)"><rect x="330" y="175" width="210" height="60" rx="10" fill="#0e2920" stroke="#34D399" stroke-width="2"/></g>
-  <text x="435" y="200" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Setter</text>
-  <text x="435" y="218" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(Haiku)</text>
+  <!-- Setter (green) y=194..254 -->
+  <g filter="url(#ds)"><rect x="400" y="194" width="220" height="60" rx="10" fill="#0e2920" stroke="#34D399" stroke-width="2"/></g>
+  <text x="510" y="219" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Setter</text>
+  <text x="510" y="237" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(Haiku)</text>
 
-  <!-- Builder (blue) -->
-  <g filter="url(#ds)"><rect x="330" y="280" width="210" height="60" rx="10" fill="#11203f" stroke="#5B9DF9" stroke-width="2"/></g>
-  <text x="435" y="305" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Builder / Engineer</text>
-  <text x="435" y="323" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(Sonnet)</text>
+  <!-- Builder (blue) y=282..342 -->
+  <g filter="url(#ds)"><rect x="400" y="282" width="220" height="60" rx="10" fill="#11203f" stroke="#5B9DF9" stroke-width="2"/></g>
+  <text x="510" y="307" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Builder / Engineer</text>
+  <text x="510" y="325" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(Sonnet)</text>
 
-  <!-- Analyst (blue) -->
-  <g filter="url(#ds)"><rect x="330" y="385" width="210" height="60" rx="10" fill="#11203f" stroke="#5B9DF9" stroke-width="2"/></g>
-  <text x="435" y="410" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Analyst / Architect</text>
-  <text x="435" y="428" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(Sonnet)</text>
+  <!-- Analyst (blue) y=370..430 -->
+  <g filter="url(#ds)"><rect x="400" y="370" width="220" height="60" rx="10" fill="#11203f" stroke="#5B9DF9" stroke-width="2"/></g>
+  <text x="510" y="395" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Analyst / Architect</text>
+  <text x="510" y="413" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(Sonnet)</text>
 
-  <!-- OUT node (gold) -->
-  <g filter="url(#ds)"><rect x="650" y="195" width="190" height="80" rx="10" fill="#2a2310" stroke="#E8B23A" stroke-width="2"/></g>
-  <text x="745" y="228" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">agent-outputs/</text>
-  <text x="745" y="248" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="10.5" fill="#93AECB">YYYY-MM-DD</text>
-  <text x="745" y="262" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="10.5" fill="#93AECB">-{tier}-{purpose}.md</text>
+  <!-- OUT node (gold) center y=268, same height as Main -->
+  <g filter="url(#ds)"><rect x="715" y="213" width="205" height="110" rx="10" fill="#2a2310" stroke="#E8B23A" stroke-width="2"/></g>
+  <text x="817" y="258" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">agent-outputs/</text>
+  <text x="817" y="280" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="10.5" fill="#93AECB">YYYY-MM-DD</text>
+  <text x="817" y="296" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="10.5" fill="#93AECB">-{tier}-{purpose}.md</text>
 
-  <!-- legend bottom-right -->
+  <!-- legend bottom-right, clear of return curve -->
   <g font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="11" fill="#93AECB">
-    <circle cx="560" cy="500" r="6" fill="#0e2920" stroke="#34D399" stroke-width="2"/>
-    <text x="572" y="504">Haiku</text>
-    <circle cx="645" cy="500" r="6" fill="#11203f" stroke="#5B9DF9" stroke-width="2"/>
-    <text x="657" y="504">Sonnet</text>
-    <circle cx="745" cy="500" r="6" fill="#2a2310" stroke="#E8B23A" stroke-width="2"/>
-    <text x="757" y="504">output</text>
+    <circle cx="640" cy="550" r="6" fill="#0e2920" stroke="#34D399" stroke-width="2"/>
+    <text x="652" y="554">Haiku</text>
+    <circle cx="725" cy="550" r="6" fill="#11203f" stroke="#5B9DF9" stroke-width="2"/>
+    <text x="737" y="554">Sonnet</text>
+    <circle cx="825" cy="550" r="6" fill="#2a2310" stroke="#E8B23A" stroke-width="2"/>
+    <text x="837" y="554">output</text>
   </g>
 </svg>
