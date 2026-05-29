@@ -1,0 +1,10 @@
+graph TD
+    Soil["CLAUDE.md (soil - always loaded) behavioural rules"]
+    Soil --> T1[Domain A]
+    Soil --> T2[Domain B]
+    Soil --> T3[Domain C]
+    T1 --> Tr1["DOMAIN.md (trunk)"]
+    Tr1 --> Q1["QUEUE (active)"]
+    Tr1 --> H1["HANDOFF (continuity)"]
+    Tr1 --> L1["leaf (specialised)"]
+    Tr1 --> L2["leaf (specialised)"]

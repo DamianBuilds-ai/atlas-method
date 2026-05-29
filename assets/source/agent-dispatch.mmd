@@ -1,0 +1,11 @@
+graph LR
+    Main["Main Session (orchestrates + decides)"]
+    Main -->|"cheap retrieval"| Scout["Scout / Explorer (Haiku)"]
+    Main -->|"deterministic apply"| Setter["Setter (Haiku)"]
+    Main -->|"execution + judgment"| Builder["Builder / Engineer (Sonnet)"]
+    Main -->|"deep work"| Analyst["Analyst / Architect (Sonnet)"]
+    Scout --> Out["agent-outputs/ YYYY-MM-DD-{tier}-{purpose}.md"]
+    Setter --> Out
+    Builder --> Out
+    Analyst --> Out
+    Out --> Main

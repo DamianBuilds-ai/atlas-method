@@ -12,28 +12,9 @@ A forest of small, self-contained domain docs governed by one set of behavioural
 
 Clone, run one script, and you have a working personal operating system on Claude Code in under 20 minutes.
 
-```mermaid
-graph TD
-    Soil["CLAUDE.md<br/>(soil - always loaded)<br/>behavioural rules"]
-    Soil --> T1[Domain A]
-    Soil --> T2[Domain B]
-    Soil --> T3[Domain C]
-    T1 --> Tr1["DOMAIN.md<br/>(trunk)"]
-    Tr1 --> Q1["QUEUE<br/>(active)"]
-    Tr1 --> H1["HANDOFF<br/>(continuity)"]
-    Tr1 --> L1["leaf<br/>(specialised)"]
-    Tr1 --> L2["leaf<br/>(specialised)"]
-    classDef soil fill:#3a2e26,stroke:#8b6f4e,color:#f5e6d3
-    classDef tree fill:#1f3a2e,stroke:#5e8b6f,color:#e6f5ea
-    classDef trunk fill:#2e3a4e,stroke:#5e6f8b,color:#e6eaf5
-    classDef branch fill:#3a2e4e,stroke:#6f5e8b,color:#eae6f5
-    classDef leaf fill:#4e3a2e,stroke:#8b6f5e,color:#f5eae6
-    class Soil soil
-    class T1,T2,T3 tree
-    class Tr1 trunk
-    class Q1,H1 branch
-    class L1,L2 leaf
-```
+<div align="center">
+  <img src="assets/forest-model.svg" alt="Forest model diagram: CLAUDE.md is the always-loaded soil at the top, feeding three domains (A, B, C). Domain A expands into its trunk (DOMAIN.md), which branches into a QUEUE and HANDOFF plus two specialised leaf docs. A legend maps colours to soil, domain, trunk, branch and leaf." width="800" />
+</div>
 
 ---
 
@@ -81,27 +62,9 @@ Main session orchestrates. Tiered agents do the work. Output flows back through 
 | Researcher | Sonnet | Deep multi-source investigation |
 | Architect | Sonnet | Design, ADR-level decisions |
 
-```mermaid
-graph LR
-    Main["Main Session<br/>(orchestrates + decides)"]
-    Main -->|"cheap retrieval"| Scout["Scout / Explorer<br/>(Haiku)"]
-    Main -->|"deterministic apply"| Setter["Setter<br/>(Haiku)"]
-    Main -->|"execution + judgment"| Builder["Builder / Engineer<br/>(Sonnet)"]
-    Main -->|"deep work"| Analyst["Analyst / Architect<br/>(Sonnet)"]
-    Scout --> Out["agent-outputs/<br/>YYYY-MM-DD-{tier}-{purpose}.md"]
-    Setter --> Out
-    Builder --> Out
-    Analyst --> Out
-    Out --> Main
-    classDef main fill:#3a2e26,stroke:#8b6f4e,color:#f5e6d3
-    classDef cheap fill:#1f3a2e,stroke:#5e8b6f,color:#e6f5ea
-    classDef heavy fill:#2e3a4e,stroke:#5e6f8b,color:#e6eaf5
-    classDef out fill:#4e3a2e,stroke:#8b6f5e,color:#f5eae6
-    class Main main
-    class Scout,Setter cheap
-    class Builder,Analyst heavy
-    class Out out
-```
+<div align="center">
+  <img src="assets/agent-dispatch.svg" alt="Agent dispatch diagram: the Main Session orchestrates and decides, dispatching to four agent tiers - Scout/Explorer and Setter on Haiku, Builder/Engineer and Analyst/Architect on Sonnet - labelled by job (cheap retrieval, deterministic apply, execution plus judgment, deep work). Each tier writes to a dated agent-outputs file, which feeds back to the Main Session." width="820" />
+</div>
 
 ---
 
@@ -109,26 +72,9 @@ graph LR
 
 `/newbot` asks 4 questions and scaffolds a new domain in 2 minutes.
 
-```mermaid
-graph TD
-    Start(["/newbot"])
-    Q1["Q1: domain name?"]
-    Q2["Q2: which archetype?<br/>(7 options)"]
-    Q3["Q3: one-line description?"]
-    Q4["Q4: confirm scaffold?"]
-    Gen["Generate from template:<br/>- DOMAIN.md (trunk)<br/>- QUEUE / HANDOFF / IDEAS<br/>- /{domain} slash command"]
-    Route["Output routing snippet<br/>for CLAUDE.md paste"]
-    Done(["Domain ready<br/>~2 min total"])
-    Start --> Q1 --> Q2 --> Q3 --> Q4 --> Gen --> Route --> Done
-    classDef start fill:#3a2e26,stroke:#8b6f4e,color:#f5e6d3
-    classDef q fill:#2e3a4e,stroke:#5e6f8b,color:#e6eaf5
-    classDef gen fill:#1f3a2e,stroke:#5e8b6f,color:#e6f5ea
-    classDef done fill:#4e3a2e,stroke:#8b6f5e,color:#f5eae6
-    class Start start
-    class Q1,Q2,Q3,Q4 q
-    class Gen,Route gen
-    class Done done
-```
+<div align="center">
+  <img src="assets/newbot-flow.svg" alt="Newbot flow diagram: running /newbot walks through four questions (domain name, archetype from seven options, one-line description, confirm scaffold), then generates the domain from a template (DOMAIN.md trunk, QUEUE/HANDOFF/IDEAS, slash command), outputs a routing snippet for CLAUDE.md, and finishes with the domain ready in about two minutes." width="520" />
+</div>
 
 **Seven archetypes** ship with v1.1.0:
 
