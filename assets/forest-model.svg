@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 560" width="820" height="560">
+  <defs>
+    <filter id="ds" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#16304d" opacity="0.55"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a5573"/>
+    </marker>
+  </defs>
+
+  <!-- canvas -->
+  <rect x="0.5" y="0.5" width="819" height="559" rx="14" fill="#0a1420" stroke="#1c3350" stroke-width="1"/>
+  <rect x="0.5" y="0.5" width="819" height="559" rx="14" fill="url(#dots)"/>
+
+  <!-- corner caption -->
+  <text x="24" y="30" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="10" letter-spacing="1.5" fill="#2f6b7a">ATLAS METHOD&#160;&#160;|&#160;&#160;FOREST MODEL</text>
+
+  <!-- edges first so nodes sit on top -->
+  <g fill="none" stroke="#3a5573" stroke-width="1.5" marker-end="url(#arrow)">
+    <!-- soil to domains -->
+    <path d="M 410 132 L 170 162"/>
+    <path d="M 410 132 L 410 162"/>
+    <path d="M 410 132 L 650 162"/>
+    <!-- domain A to trunk -->
+    <path d="M 170 224 C 170 252, 320 258, 400 280"/>
+    <!-- trunk to four children -->
+    <path d="M 360 336 C 250 366, 175 384, 140 404"/>
+    <path d="M 388 342 C 350 372, 325 386, 310 404"/>
+    <path d="M 432 342 C 470 372, 495 386, 510 404"/>
+    <path d="M 460 336 C 570 366, 645 384, 680 404"/>
+  </g>
+
+  <!-- SOIL node (cyan accent, wide) -->
+  <g filter="url(#ds)">
+    <rect x="230" y="72" width="360" height="60" rx="10" fill="#0e2733" stroke="#22D3EE" stroke-width="2"/>
+  </g>
+  <text x="410" y="95" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">CLAUDE.md</text>
+  <text x="410" y="111" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">soil - always loaded</text>
+  <text x="410" y="125" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">behavioural rules</text>
+
+  <!-- Domain nodes (blue) -->
+  <g font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="14" fill="#E6EDF7" text-anchor="middle">
+    <g filter="url(#ds)"><rect x="100" y="162" width="140" height="60" rx="10" fill="#11203f" stroke="#5B9DF9" stroke-width="2"/></g>
+    <text x="170" y="197">Domain A</text>
+    <g filter="url(#ds)"><rect x="340" y="162" width="140" height="60" rx="10" fill="#11203f" stroke="#5B9DF9" stroke-width="2"/></g>
+    <text x="410" y="197">Domain B</text>
+    <g filter="url(#ds)"><rect x="580" y="162" width="140" height="60" rx="10" fill="#11203f" stroke="#5B9DF9" stroke-width="2"/></g>
+    <text x="650" y="197">Domain C</text>
+  </g>
+
+  <!-- Trunk node (brighter blue variant) -->
+  <g filter="url(#ds)">
+    <rect x="320" y="276" width="180" height="60" rx="10" fill="#12233a" stroke="#7FB5FF" stroke-width="2"/>
+  </g>
+  <text x="410" y="300" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">DOMAIN.md</text>
+  <text x="410" y="318" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(trunk)</text>
+
+  <!-- Children: two branches (green) + two leaves (gold) -->
+  <!-- QUEUE branch -->
+  <g filter="url(#ds)"><rect x="60" y="404" width="160" height="62" rx="10" fill="#0e2920" stroke="#34D399" stroke-width="1.6"/></g>
+  <text x="140" y="430" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">QUEUE</text>
+  <text x="140" y="448" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(active)</text>
+
+  <!-- HANDOFF branch -->
+  <g filter="url(#ds)"><rect x="232" y="404" width="160" height="62" rx="10" fill="#0e2920" stroke="#34D399" stroke-width="1.6"/></g>
+  <text x="312" y="430" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">HANDOFF</text>
+  <text x="312" y="448" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(continuity)</text>
+
+  <!-- leaf 1 (gold) -->
+  <g filter="url(#ds)"><rect x="430" y="404" width="160" height="62" rx="10" fill="#2a2310" stroke="#E8B23A" stroke-width="1.6"/></g>
+  <text x="510" y="430" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">leaf</text>
+  <text x="510" y="448" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(specialised)</text>
+
+  <!-- leaf 2 (gold) -->
+  <g filter="url(#ds)"><rect x="602" y="404" width="160" height="62" rx="10" fill="#2a2310" stroke="#E8B23A" stroke-width="1.6"/></g>
+  <text x="682" y="430" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">leaf</text>
+  <text x="682" y="448" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(specialised)</text>
+
+  <!-- legend strip -->
+  <g font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="11" fill="#93AECB">
+    <circle cx="80" cy="520" r="6" fill="#0e2733" stroke="#22D3EE" stroke-width="2"/>
+    <text x="92" y="524">soil</text>
+    <circle cx="180" cy="520" r="6" fill="#11203f" stroke="#5B9DF9" stroke-width="2"/>
+    <text x="192" y="524">domain</text>
+    <circle cx="300" cy="520" r="6" fill="#12233a" stroke="#7FB5FF" stroke-width="2"/>
+    <text x="312" y="524">trunk</text>
+    <circle cx="410" cy="520" r="6" fill="#0e2920" stroke="#34D399" stroke-width="2"/>
+    <text x="422" y="524">branch</text>
+    <circle cx="530" cy="520" r="6" fill="#2a2310" stroke="#E8B23A" stroke-width="2"/>
+    <text x="542" y="524">leaf</text>
+  </g>
+</svg>

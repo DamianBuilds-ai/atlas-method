@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 760" width="600" height="760">
+  <defs>
+    <filter id="ds" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#16304d" opacity="0.55"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a5573"/>
+    </marker>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="599" height="759" rx="14" fill="#0a1420" stroke="#1c3350" stroke-width="1"/>
+  <rect x="0.5" y="0.5" width="599" height="759" rx="14" fill="url(#dots)"/>
+
+  <text x="24" y="30" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="10" letter-spacing="1.5" fill="#2f6b7a">ATLAS METHOD&#160;&#160;|&#160;&#160;NEWBOT FLOW</text>
+
+  <!-- vertical connector arrows -->
+  <g fill="none" stroke="#3a5573" stroke-width="1.5" marker-end="url(#arrow)">
+    <path d="M 300 92 L 300 102"/>
+    <path d="M 300 152 L 300 162"/>
+    <path d="M 300 212 L 300 222"/>
+    <path d="M 300 272 L 300 282"/>
+    <path d="M 300 332 L 300 342"/>
+    <path d="M 300 452 L 300 462"/>
+    <path d="M 300 532 L 300 542"/>
+  </g>
+
+  <!-- 1. /newbot  (cyan pill) -->
+  <g filter="url(#ds)"><rect x="200" y="52" width="200" height="40" rx="20" fill="#0e2733" stroke="#22D3EE" stroke-width="2"/></g>
+  <text x="300" y="77" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">/newbot</text>
+
+  <!-- 2. Q1 (blue) -->
+  <g filter="url(#ds)"><rect x="120" y="102" width="360" height="50" rx="10" fill="#11203f" stroke="#5B9DF9" stroke-width="1.6"/></g>
+  <text x="300" y="132" text-anchor="middle"><tspan font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Q1:</tspan><tspan dx="5" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="14" fill="#E6EDF7">domain name?</tspan></text>
+
+  <!-- 3. Q2 (blue) -->
+  <g filter="url(#ds)"><rect x="120" y="162" width="360" height="50" rx="10" fill="#11203f" stroke="#5B9DF9" stroke-width="1.6"/></g>
+  <text x="300" y="185" text-anchor="middle"><tspan font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Q2:</tspan><tspan dx="5" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="14" fill="#E6EDF7">which archetype?</tspan></text>
+  <text x="300" y="202" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">(7 options)</text>
+
+  <!-- 4. Q3 (blue) -->
+  <g filter="url(#ds)"><rect x="120" y="222" width="360" height="50" rx="10" fill="#11203f" stroke="#5B9DF9" stroke-width="1.6"/></g>
+  <text x="300" y="252" text-anchor="middle"><tspan font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Q3:</tspan><tspan dx="5" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="14" fill="#E6EDF7">one-line description?</tspan></text>
+
+  <!-- 5. Q4 (blue) -->
+  <g filter="url(#ds)"><rect x="120" y="282" width="360" height="50" rx="10" fill="#11203f" stroke="#5B9DF9" stroke-width="1.6"/></g>
+  <text x="300" y="312" text-anchor="middle"><tspan font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="14" fill="#E6EDF7">Q4:</tspan><tspan dx="5" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="14" fill="#E6EDF7">confirm scaffold?</tspan></text>
+
+  <!-- 6. Gen (green, tall) -->
+  <g filter="url(#ds)"><rect x="120" y="342" width="360" height="110" rx="10" fill="#0e2920" stroke="#34D399" stroke-width="1.6"/></g>
+  <text x="300" y="368" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="14" fill="#E6EDF7">Generate from template:</text>
+  <text x="300" y="392" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="12" fill="#93AECB">DOMAIN.md (trunk)</text>
+  <text x="300" y="412" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="12" fill="#93AECB">QUEUE / HANDOFF / IDEAS</text>
+  <text x="300" y="432" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="12" fill="#93AECB">/{domain} slash command</text>
+
+  <!-- 7. Route (green) -->
+  <g filter="url(#ds)"><rect x="120" y="462" width="360" height="70" rx="10" fill="#0e2920" stroke="#34D399" stroke-width="1.6"/></g>
+  <text x="300" y="492" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="14" fill="#E6EDF7">Output routing snippet</text>
+  <text x="300" y="512" text-anchor="middle"><tspan font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">for</tspan><tspan dx="4" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="11" fill="#93AECB">CLAUDE.md</tspan><tspan dx="4" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#93AECB">paste</tspan></text>
+
+  <!-- 8. Done (gold pill) -->
+  <g filter="url(#ds)"><rect x="170" y="542" width="260" height="56" rx="28" fill="#2a2310" stroke="#E8B23A" stroke-width="2"/></g>
+  <text x="300" y="568" text-anchor="middle" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="14" fill="#E6EDF7">Domain ready</text>
+  <text x="300" y="585" text-anchor="middle" font-family="'IBM Plex Mono','SFMono-Regular',ui-monospace,monospace" font-size="11" fill="#93AECB">~2 min total</text>
+</svg>

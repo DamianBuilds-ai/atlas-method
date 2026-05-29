@@ -1,0 +1,10 @@
+graph TD
+    Start(["/newbot"])
+    Q1["Q1: domain name?"]
+    Q2["Q2: which archetype? (7 options)"]
+    Q3["Q3: one-line description?"]
+    Q4["Q4: confirm scaffold?"]
+    Gen["Generate from template: DOMAIN.md (trunk), QUEUE / HANDOFF / IDEAS, /{domain} slash command"]
+    Route["Output routing snippet for CLAUDE.md paste"]
+    Done(["Domain ready ~2 min total"])
+    Start --> Q1 --> Q2 --> Q3 --> Q4 --> Gen --> Route --> Done
