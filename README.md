@@ -131,7 +131,7 @@ Open an issue to propose a methodology change, or a pull request against the ske
 
 ## License + version
 
-MIT licensed. Public version v1.1.0 maps to internal methodology v7.5.x. Maintainer: [DamianBuilds-ai](https://github.com/DamianBuilds-ai).
+MIT licensed. Public version v1.1.2 (latest) maps to internal methodology v7.5.x. See CHANGELOG.md for version history. Maintainer: [DamianBuilds-ai](https://github.com/DamianBuilds-ai).
 
 > **Note:** Atlas Method is the methodology, published on its own. It is intentionally separate from any individual's personal operating system or portfolio. This repo contains clean, generic templates - no personal data, no private domains. Fill it with your own.
 
