@@ -8,7 +8,7 @@
 ![Agents](https://img.shields.io/badge/agents-9%20tiers-purple)
 ![Status](https://img.shields.io/badge/status-stable-brightgreen)
 
-A forest of small, self-contained domain docs governed by one set of behavioural rules, kept lean so context - the scarcest resource in any AI session - is never wasted.
+A forest of skills (your slash commands), each rooted in its own small domain and governed by one set of behavioural rules. Kept lean so context - the scarcest resource in any AI session - is never wasted. Agents do the work.
 
 Clone, run one script, and you have a working personal operating system on Claude Code in under 20 minutes.
 
@@ -32,17 +32,19 @@ Open `~/my-atlas` in Claude Code. Full walkthrough: [QUICKSTART.md](versions/v1.
 
 ## What is Atlas Method?
 
-Most people who try to run their life through an AI assistant hit the same wall: the context window. Pour everything into one giant file and the assistant reads slower, reasons worse, and eventually cannot hold it all. Split everything into a thousand files and it cannot find anything. Atlas Method resolves this with a forest of small trees.
+Most people who try to run their life through an AI assistant hit the same wall: the context window. Pour everything into one giant file and the assistant reads slower, reasons worse, and eventually cannot hold it all. Split everything into a thousand files and it cannot find anything. Atlas Method resolves this with a forest of small trees, each one opened by a skill.
 
 **Soil.** `CLAUDE.md` is the soil. Always loaded. Holds the behavioural rules - domain isolation, scout-first dispatch, wrap protocol, agent delegation - that every session inherits. Rules, not content. The soil never changes shape.
 
-**Trunk.** Each domain has one trunk doc (`DOMAIN.md`). The stable facts. The map of the territory. Kept under 500 lines so a session can read it whole without burning context.
+**Tree (skill).** A slash command (`/treasury`, `/atrium`, `/sora`) is a tree. The skill is the entry point that calls the domain into being - typing `/treasury` opens the treasury tree, loading its trunk, branches, and the reading discipline that keeps the session lean. Skills are how you enter the forest.
 
-**Branches.** `DOMAIN_QUEUE.md` (what's active), `DOMAIN_HANDOFF.md` (continuity to the next session), `DOMAIN_LOG.md` (history). These are the load-bearing branches of every tree.
+**Trunk.** Each tree's main reference doc (`DOMAIN.md`). The stable facts. The map of the territory. Kept under 500 lines so a session can read it whole without burning context. The trunk lives inside the tree; the skill is what calls it.
+
+**Branches.** `DOMAIN_QUEUE.md` (what's active), `DOMAIN_HANDOFF.md` (continuity to the next session), `DOMAIN_LOG.md` (history). These are the load-bearing branches that hang from the trunk.
 
 **Leaves.** Specialised sub-docs (`DOMAIN-TOPIC.md`). Loaded only when needed. Capped at ~300 lines. When a leaf outgrows its cap, it splits. Growth is sideways, never upward.
 
-A new domain is a new tree. A new sub-topic is a new leaf. The forest grows around the soil.
+A new domain is a new tree, opened by a new skill. A new sub-topic is a new leaf. The forest grows around the soil.
 
 ---
 
@@ -131,7 +133,7 @@ Open an issue to propose a methodology change, or a pull request against the ske
 
 ## License + version
 
-MIT licensed. Public version v1.1.2 (latest) maps to internal methodology v7.5.x. See CHANGELOG.md for version history. Maintainer: [DamianBuilds-ai](https://github.com/DamianBuilds-ai).
+MIT licensed. Public versions track internal methodology v7.5.x. See [CHANGELOG.md](CHANGELOG.md) for the current version and full history. Maintainer: [DamianBuilds-ai](https://github.com/DamianBuilds-ai).
 
 > **Note:** Atlas Method is the methodology, published on its own. It is intentionally separate from any individual's personal operating system or portfolio. This repo contains clean, generic templates - no personal data, no private domains. Fill it with your own.
 

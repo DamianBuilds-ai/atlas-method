@@ -6,6 +6,17 @@ This project uses two-track versioning. The **public** version (this repo) and t
 
 The format follows the spirit of Keep a Changelog, and the public track adheres to Semantic Versioning.
 
+## [1.1.3] - 2026-05-30
+
+### Changed
+- Forest metaphor expanded: skill (slash command) is now the TREE (the entry point that calls the domain into being). Domain remains the TRUNK. Branches (supporting docs) and leaves (sub-docs) unchanged. Reframes the methodology around the actual entry surface.
+- README "What is Atlas Method?" + tagline updated to feature skills as the primary surface.
+- Version references audited - hardcoded mentions replaced with dynamic CHANGELOG.md references where applicable.
+
+### Notes
+- This is a doc-only patch. No code or template changes. v1.1.x base unchanged.
+- Future work queued for v1.1.4: Windows jq shell-restart note, Stop hook stronger guard, full skill-framing rewrite across QUICKSTART + NEWBOT-PROTOCOL + internal CLAUDE.md (deferred per Damian's "minimal scope" call 2026-05-30).
+
 ## [1.1.2] - 2026-05-29
 
 ### Added

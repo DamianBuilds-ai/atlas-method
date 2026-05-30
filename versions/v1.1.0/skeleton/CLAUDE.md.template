@@ -130,6 +130,8 @@ The doc system is a forest of small trees, each domain its own tree. This CLAUDE
 - **Branches** = a domain's supporting docs (QUEUE, HANDOFF)
 - **Leaves** = specialized sub-docs ({DOMAIN}-{TOPIC}.md)
 
+> Skill (slash command) = tree | Domain = trunk | Branches = supporting docs | Leaves = sub-docs. The skill is the entry point that calls the domain into being.
+
 **Growing rule:** a leaf stays under ~300 lines. If it outgrows that, split it. A trunk can be longer but should stay under ~500 lines. If a trunk outgrows that, extract branches into leaves.
 
 | To find... | Read |
