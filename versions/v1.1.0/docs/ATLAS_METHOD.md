@@ -362,6 +362,89 @@ Stage 1 has TWO modes. Both fire scouts before any forward motion. The unconditi
 
 **Scratchpad-driven coordination:** when 5+ research agents dispatch in parallel, main session creates a research-findings scratchpad with section anchors (`<!-- SECTION: section-N -->`). Each agent writes to its assigned section. Main session reads the scratchpad, not many individual chat returns.
 
+**Context-rich Stage 1 mode:** a third mode, sitting above orientation and question-aware. Triggered when the opening prompt is 80+ words OR names 2+ topics/files/decisions in a single message OR contains forwarded context (pasted logs, prior session summaries, external input). The model fires up to 2 extra targeted scouts - including cross-domain scouts - before generating any reply. Guardrails: position-locked to session turn 1 only (never fires mid-session), hard cap of 2 extra scouts regardless of how rich the prompt is, typed fallback if a scout's target is not found (model notes the miss in the reply rather than re-scouting). Purpose: rich openers deserve scout-grounded answers, not cold replies from the command spec alone. A long prompt is a signal to fetch more context, not a reason to skip Stage 1.
+
+---
+
+## Persistent scratchpad primitive - `{DOMAIN}_SCRATCHPAD.md`
+
+**Opt-in.** Not every domain needs this. Create it only when a domain accumulates decisions-with-rationale and live state that have nowhere else to live across sessions. Good candidates: architecture domains, bot frameworks, complex pipelines, any domain where the same design questions recur.
+
+### What it is (and is not)
+
+| File | Role |
+|------|------|
+| `{DOMAIN}_HANDOFF.md` | Session baton - what THIS session did, what is in flight, what is blocked |
+| `{DOMAIN}_SCRATCHPAD.md` | Domain state board - what the domain IS and WHY, across ALL sessions |
+| `{DOMAIN}_PROGRESS.md` | Context-shield emergency save - fire when context is critically full mid-session |
+
+The scratchpad and HANDOFF are **subtractive, not additive.** As durable state migrates into the scratchpad, the HANDOFF shrinks. A HANDOFF block that has survived 3+ sessions unmoved belongs in the scratchpad instead.
+
+### Size and read rules
+
+- **Scout threshold: 150 lines / 6,000 chars.** At or under, main session direct-reads. Over, dispatch a Scout with a fixed return: (1) current state 3-5 bullets, (2) open loops max 5 lines, (3) last 3 decisions with 1-line rationale. No session narrative.
+- **Over-cap: 200 lines.** Scout fires and carries "(OVER CAP - prune on wrap)". Overflow archives to `{DOMAIN}_SCRATCHPAD_ARCHIVE.md`.
+
+### Write discipline
+
+- **Write at session end (wrap) only.** During-session scratch is ephemeral and lives elsewhere.
+- **Distill test at wrap:** task -> QUEUE, settled decision -> trunk, cross-domain finding -> shared knowledge store. Only live state and unresolved design thinking survive.
+- **30-line-delta guardrail:** grew 30+ lines this session? Distill pass mandatory before committing. If context is too tight to distill, write "DISTILL PENDING" at the very top.
+
+### Structure
+
+```
+{DOMAIN}_SCRATCHPAD.md
+├── Live State        (5-10 lines: current mode, active constraints, services up/down)
+├── Key Decisions     (table: decision | rationale | locked date; max 10 entries)
+├── Open Loops        (checklist: unresolved design questions; max 5 items)
+└── Design Constraints (hard constraints future sessions must respect)
+```
+
+Template: `templates/DOMAIN_SCRATCHPAD.md.template`
+
+---
+
+## Cross-domain shared-doc primitive - `{A}_{B}_SHARED.md`
+
+When two domains coordinate on the same topic across sessions, they share a grammar leaf. Neither domain owns the file outright - it lives at the repo root and both domains list it in their on-demand leaves, loading it when the shared topic is in play.
+
+### When to create one
+
+Create when two distinct domains need to use the same vocabulary or signals and drift between sessions has caused misalignment. Do NOT pre-create for hypothetical future sharing. Create when the second writer arrives in code.
+
+### Structure
+
+```
+{A}_{B}_SHARED.md
+├── The Anchor     (one paragraph: what this governs and why neither domain owns it alone)
+├── Shared Vocabulary / Signal Table  (terms + meanings + owner domain)
+├── Lane Ownership (who owns what; explicit shared zones are the handshake boundary)
+├── Handshake Protocol (concrete steps for cross-domain coordination)
+└── Change log
+```
+
+### What belongs here vs what does not
+
+| Belongs | Does not belong |
+|---------|----------------|
+| Shared vocabulary, signal tables | Tasks (goes to QUEUE) |
+| Lane ownership decisions | Session state (goes to HANDOFF) |
+| Cross-domain coordination protocol | History (goes to LOG) |
+| | Cross-domain findings (goes to shared knowledge store) |
+
+### Example
+
+`HEALTH_JOURNAL_SHARED.md` - shared between a Health domain tracking body signals and a Journal domain tracking mood and energy. Both domains use terms like "crash", "spike", "recovery window" - without a shared doc, each session can define these differently. The shared doc locks the vocabulary once, owned by neither domain alone.
+
+### Naming rules
+
+- **File named `{DOMAIN_A}_{DOMAIN_B}_SHARED.md` (underscores, at repo root)** when neither domain hosts the file.
+- **Hyphen-named under one domain** only when one domain is the clear canonical owner.
+- Content leaf: 200-300 lines max.
+
+Template: `templates/A_B_SHARED.md.template`
+
 ---
 
 ## Model-pairing agent formations

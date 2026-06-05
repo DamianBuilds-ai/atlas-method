@@ -1,0 +1,68 @@
+# {DOMAIN_A} / {DOMAIN_B} SHARED - [topic]
+<!-- Cross-domain shared grammar doc. A separate primitive from the persistent scratchpad. -->
+<!-- Both {DOMAIN_A} and {DOMAIN_B} list this under their on-demand leaves and load it -->
+<!-- when [topic] is in play. -->
+
+<!-- NAMING: if neither domain owns the file, name it {DOMAIN_A}_{DOMAIN_B}_SHARED.md -->
+<!-- at the repo root. If one domain hosts it, hyphen-name it under that domain. -->
+
+<!-- EXAMPLE: HEALTH_JOURNAL_SHARED.md shared between a Health domain and a Journal domain, -->
+<!-- holding shared vocabulary for body signals that both domains track differently. -->
+
+<!-- Content leaf: 200-300 lines max. -->
+<!-- Hyphen-named only if it lives under a single domain. -->
+<!-- Use {DOMAIN_A}_{DOMAIN_B}_SHARED.md (underscores) when neither domain hosts the file. -->
+
+<!-- WHAT BELONGS HERE: shared vocabulary, signal tables, lane ownership, handshake protocol. -->
+<!-- WHAT DOES NOT: tasks (QUEUE), session state (HANDOFF), history (LOG), -->
+<!--                cross-domain findings (shared knowledge store). -->
+
+---
+
+## The Anchor
+<!-- One paragraph: what this shared doc governs and WHY neither domain owns it alone. -->
+<!-- Name the domains, name the topic, name the coordination problem it solves. -->
+
+
+---
+
+## Shared Vocabulary / Signal Table
+<!-- The terms, signals, or concepts that both domains use and must mean the same thing. -->
+<!-- Add "Owner domain" to clarify who defines the canonical meaning when ambiguous. -->
+
+| Term / Signal | Meaning | Owner domain |
+|---------------|---------|--------------|
+|               |         |              |
+
+---
+
+## Lane Ownership
+<!-- Who owns what decisions and surfaces. Prevents domain collision and double-writing. -->
+<!-- Be explicit about shared zones - those are the handshake boundaries. -->
+
+- **{DOMAIN_A} owns:**
+  -
+
+- **{DOMAIN_B} owns:**
+  -
+
+- **Shared (neither decides alone - requires both domains to align):**
+  -
+
+---
+
+## Handshake Protocol
+<!-- How the two domains coordinate on this topic across sessions. -->
+<!-- Concrete. Steps, not principles. What triggers a cross-domain update? How is it signalled? -->
+
+1.
+2.
+
+---
+
+## Change log
+<!-- Date + brief note when the shared doc itself changes. Both domains should note the update. -->
+
+| Date | Change | Initiated by |
+|------|--------|--------------|
+|      |        |              |

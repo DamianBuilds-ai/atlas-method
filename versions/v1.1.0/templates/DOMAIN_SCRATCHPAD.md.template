@@ -1,0 +1,67 @@
+# {DOMAIN} SCRATCHPAD
+<!-- OPT-IN. Only create this file for complex or stateful domains. -->
+<!-- NOT a universal mandatory doc. Do not create unless the domain accumulates -->
+<!-- decisions-with-rationale and live state that have nowhere else to live. -->
+<!-- Good candidates: architecture domains, bot frameworks, financial pipelines, -->
+<!-- any domain where the same design decisions recur across sessions. -->
+<!-- Example filename: HEALTH_JOURNAL_SHARED.md (Health + Journal domains sharing -->
+<!-- a vocabulary) - see A_B_SHARED.md.template for the cross-domain pattern. -->
+
+<!-- SIZE CAP: 150 lines / 6,000 chars = scout threshold. -->
+<!--   At or under: main session direct-reads. -->
+<!--   Over: dispatch a Scout with a fixed return format: -->
+<!--         1. Current state - 3-5 bullets -->
+<!--         2. Open loops - max 5 lines -->
+<!--         3. Last 3 decisions with 1-line rationale -->
+<!--         No session narrative in the scout return. -->
+<!--   Over 200 lines = OVER CAP: scout fires but carries "(OVER CAP - prune on wrap)"; -->
+<!--         overflow archives to {DOMAIN}_SCRATCHPAD_ARCHIVE.md. -->
+
+<!-- WRITE DISCIPLINE: write at session END (wrap) only. -->
+<!--   During-session scratch goes to ephemeral working scratchpads (different contract). -->
+<!--   DISTILL TEST at wrap: task -> QUEUE, settled decision -> trunk, cross-domain finding -> shared knowledge store. -->
+<!--   What survives: only live state and unresolved design thinking. -->
+<!--   GUARDRAIL: grew 30+ lines this session? Distill pass MANDATORY before commit. -->
+<!--              If context too tight to distill: write "DISTILL PENDING" at the very top. -->
+
+<!-- BRIGHT LINE vs HANDOFF: -->
+<!--   HANDOFF = session baton (what THIS session did, in-flight, blocked). -->
+<!--   SCRATCHPAD = domain state board (what the domain IS and WHY, across all sessions). -->
+<!--   As durable state migrates here, HANDOFF SHRINKS. They are subtractive, not additive. -->
+<!--   A HANDOFF block surviving 3+ sessions unmoved belongs here instead. -->
+
+<!-- DISTINCT FROM {DOMAIN}_PROGRESS.md: PROGRESS.md is the context-shield emergency save -->
+<!-- (fire when context is critically full mid-session). Scratchpad is the structured wrap artifact. -->
+
+---
+
+## Live State
+<!-- What the domain IS right now. Current mode, active constraints, key services up/down. -->
+<!-- 5-10 lines max. Punchy. -->
+
+
+---
+
+## Key Decisions
+<!-- Decisions-with-rationale: "tried X, it broke for Y, so the constraint is Z". -->
+<!-- Only locked decisions survive here. Provisional thinking goes to Open Loops. Max 10 entries. -->
+
+| Decision | Rationale | Locked date |
+|----------|-----------|-------------|
+|          |           |             |
+
+---
+
+## Open Loops
+<!-- Cross-session design questions not yet resolved. Neither a task nor done. Max 5 items. -->
+<!-- If a loop closes: move the resolution to Key Decisions (if it locked something) or delete it. -->
+
+- [ ]
+
+---
+
+## Design Constraints
+<!-- Hard constraints that future sessions MUST respect. Short, imperative. -->
+<!-- If a constraint gets overturned, move the old one to Key Decisions with a "constraint lifted" rationale. -->
+
+-

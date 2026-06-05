@@ -6,6 +6,23 @@ This project uses two-track versioning. The **public** version (this repo) and t
 
 The format follows the spirit of Keep a Changelog, and the public track adheres to Semantic Versioning.
 
+## [1.1.4] - 2026-06-05
+
+### Added
+- **Persistent scratchpad primitive** (`{DOMAIN}_SCRATCHPAD.md`): an opt-in content leaf for complex or stateful domains. Holds distilled cross-session state, decisions-with-rationale, and open design loops - the things that have nowhere else to live. Distinct from `{DOMAIN}_HANDOFF.md` (session baton) and `{DOMAIN}_PROGRESS.md` (emergency context save). The two are subtractive: as durable state migrates to the scratchpad, the HANDOFF shrinks. Includes: 150-line scout threshold, 200-line over-cap prune to archive, write-at-wrap discipline, 30-line-delta distill guardrail.
+- **Cross-domain shared-doc primitive** (`{A}_{B}_SHARED.md`): a grammar leaf that neither domain hosts alone. Both partner domains list it under their on-demand leaves and load it when the shared topic is in play. Holds shared vocabulary, signal tables, lane ownership, and handshake protocol. Content leaf: 200-300 lines. Create only when a second writer arrives - do not pre-create for hypothetical sharing.
+- **Context-rich Stage 1 mode**: a third Stage 1 dispatch mode (above orientation and question-aware). Fires when the opening prompt is 80+ words, names 2+ topics/files/decisions, or contains forwarded context. Dispatches up to 2 extra targeted scouts before generating any reply. Position-locked to session turn 1, hard cap of 2 extra scouts, typed fallback on a scout miss. Purpose: rich openers deserve scout-grounded answers - a long prompt is a signal to fetch more context, not a reason to skip Stage 1.
+- **Template: DOMAIN_SCRATCHPAD.md.template** in `templates/`: ready-to-copy scaffold for the persistent scratchpad with all four sections and discipline comments. Fixes the "scratchpad template not found" gap reported by Windows downloaders.
+- **Template: A_B_SHARED.md.template** in `templates/`: ready-to-copy scaffold for the cross-domain shared doc with anchor, vocabulary table, lane ownership, handshake protocol, and change log.
+- **Windows setup doc** (`docs/WINDOWS-SETUP.md`): dedicated prerequisites guide addressing the four root causes of "it does not work on Windows" - wrong surface (claude.ai vs Claude Code CLI), symlink failures (copy files directly), missing bash shell (Git for Windows), and jq not on PATH. Includes a verification checklist.
+
+### Why this matters
+The scratchpad and shared-doc primitives close a long-standing gap: complex domains had no structured place for cross-session state that was neither a task (QUEUE), a baton (HANDOFF), nor a history entry (LOG). Without these primitives, that state silently accumulated in HANDOFF, bloating it past the 3-block prune trigger and forcing repeated re-explanation. The context-rich Stage 1 mode makes the system smarter about information-dense openers. The Windows doc collapses weeks of troubleshooting into one checklist.
+
+### Notes
+- All changes are additions to the v1.1.0 working tree (in-place patch pattern). v1.0.0 + v1.1.0 base trees unchanged.
+- The "scratchpad template not found" issue was the primary bug this patch fixes - the template now ships with the repo.
+
 ## [1.1.3] - 2026-05-30
 
 ### Changed

@@ -92,6 +92,16 @@ Pick the shape that fits, answer four questions, get a working domain with the r
 
 ---
 
+## What's new in v1.1.4
+
+- **Persistent scratchpad primitive** - `{DOMAIN}_SCRATCHPAD.md` closes the gap between session baton (HANDOFF) and tasks (QUEUE). Complex/stateful domains now have a structured home for cross-session decisions and open design loops.
+- **Cross-domain shared-doc primitive** - `{A}_{B}_SHARED.md` lets two domains coordinate vocabulary and lane ownership without either domain hosting the file alone.
+- **Context-rich Stage 1 mode** - information-dense opening prompts (80+ words, 2+ named topics, forwarded context) now trigger up to 2 extra targeted scouts before the first reply. Long prompts are a signal to fetch more, not skip Stage 1.
+- **Two new templates** - `DOMAIN_SCRATCHPAD.md.template` and `A_B_SHARED.md.template` ship in `templates/`. Fixes the missing scratchpad template gap.
+- **Windows setup doc** - `docs/WINDOWS-SETUP.md` covers the four root causes of Windows failures: wrong surface, symlinks, missing bash, and jq not on PATH.
+
+Full changes: [CHANGELOG.md](CHANGELOG.md).
+
 ## What's new in v1.1.0
 
 - **`/newbot`** - interactive scaffolder, 7 archetypes, 2 minutes per new domain
@@ -133,7 +143,9 @@ Open an issue to propose a methodology change, or a pull request against the ske
 
 ## License + version
 
-MIT licensed. Public versions track internal methodology v7.5.x. See [CHANGELOG.md](CHANGELOG.md) for the current version and full history. Maintainer: [DamianBuilds-ai](https://github.com/DamianBuilds-ai).
+MIT licensed. Current public release: **v1.1.4**. See [CHANGELOG.md](CHANGELOG.md) for full history. Maintainer: [DamianBuilds-ai](https://github.com/DamianBuilds-ai).
+
+**Windows?** See [docs/WINDOWS-SETUP.md](versions/v1.1.0/docs/WINDOWS-SETUP.md) for the four common failure points and a quick checklist.
 
 > **Note:** Atlas Method is the methodology, published on its own. It is intentionally separate from any individual's personal operating system or portfolio. This repo contains clean, generic templates - no personal data, no private domains. Fill it with your own.
 
