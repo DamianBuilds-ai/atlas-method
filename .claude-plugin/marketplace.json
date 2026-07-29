@@ -1,0 +1,16 @@
+{
+  "name": "atlas-method-marketplace",
+  "description": "Official Atlas Method plugin marketplace. Self-hosted distribution via relative path. To distribute via git ref instead, change source to: {\"source\":\"github\",\"repo\":\"DamianBuilds-ai/atlas-method\",\"ref\":\"v1.1.0\"}.",
+  "owner": {
+    "name": "Damian Yazbeck",
+    "url": "https://github.com/DamianBuilds-ai"
+  },
+  "plugins": [
+    {
+      "name": "atlas-method",
+      "displayName": "Atlas Method",
+      "description": "A lean-by-design methodology for running a personal operating system on Claude Code. Commands, hooks, and scaffold templates for building a domain-structured knowledge and automation system.",
+      "source": "./plugins/atlas-method"
+    }
+  ]
+}

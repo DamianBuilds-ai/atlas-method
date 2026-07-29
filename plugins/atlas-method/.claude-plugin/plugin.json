@@ -1,0 +1,64 @@
+{
+  "name": "atlas-method",
+  "displayName": "Atlas Method",
+  "version": "0.1.0",
+  "description": "A lean-by-design methodology for running a personal operating system on Claude Code. Ships /atlas self-audit, /newbot domain scaffolder, four lifecycle hooks, and an init skill that copies starter files into your project without overwriting anything you own.",
+  "author": {
+    "name": "Damian Yazbeck",
+    "url": "https://github.com/DamianBuilds-ai/atlas-method"
+  },
+  "homepage": "https://github.com/DamianBuilds-ai/atlas-method",
+  "repository": "https://github.com/DamianBuilds-ai/atlas-method",
+  "license": "MIT",
+  "keywords": [
+    "personal-os",
+    "claude-code",
+    "methodology",
+    "documentation",
+    "productivity",
+    "agent-patterns"
+  ],
+  "defaultEnabled": true,
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scratchpad-update-nudge.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/no-em-dash.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/task-output-verify.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/wrap-push-reminder.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
