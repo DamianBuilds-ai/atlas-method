@@ -10,7 +10,7 @@
 
 A forest of skills (your slash commands), each rooted in its own small domain and governed by one set of behavioural rules. Kept lean so context - the scarcest resource in any AI session - is never wasted. Agents do the work.
 
-Clone, run one script, and you have a working personal operating system on Claude Code in under 20 minutes.
+Install the plugin, run the init skill, and you have a working personal operating system on Claude Code in under 20 minutes.
 
 <div align="center">
   <img src="assets/forest-model.svg" alt="Forest model diagram: CLAUDE.md is the always-loaded soil at the top, feeding three domains (A, B, C). Domain A expands into its trunk (DOMAIN.md), which branches into a QUEUE and HANDOFF plus two specialised leaf docs. A legend maps colours to soil, domain, trunk, branch and leaf." width="800" />
@@ -20,13 +20,18 @@ Clone, run one script, and you have a working personal operating system on Claud
 
 ## Install
 
-```sh
-git clone https://github.com/DamianBuilds-ai/atlas-method.git
-cd atlas-method
-sh versions/v1.1.0/bin/atlas-init ~/my-atlas
+```bash
+claude plugin marketplace add DamianBuilds-ai/atlas-method
+claude plugin install atlas-method@atlas-method-marketplace
 ```
 
-Open `~/my-atlas` in Claude Code. Full walkthrough: [QUICKSTART.md](versions/v1.1.0/QUICKSTART.md).
+Then run `/atlas-method:atlas-init` from your project directory to scaffold the starter files.
+
+[INSTALL.md](plugins/atlas-method/INSTALL.md) covers everything else: sparse checkout (recommended), trying without installing, migrating from a hand-installed setup, hooks that need manual wiring, updating, and uninstalling.
+
+For Windows or plugin-averse setups, a manual clone fallback is also documented there.
+
+**Version note.** `VERSION` is the methodology version and single source of truth - currently `1.1.4`. The `versions/` directory holds milestone snapshots; its newest entry is `v1.1.0`. The manual install path installs from that snapshot, not from `VERSION`. See [CHANGELOG.md](CHANGELOG.md) for what changed between them.
 
 ---
 
@@ -111,7 +116,7 @@ Full changes: [CHANGELOG.md](CHANGELOG.md).
 - **Tier-named agents** - Explorer / Scout / Setter / Analyst / Builder / Scribe / Engineer / Researcher / Architect
 
 Full migration guide: [MIGRATION_v1.0.0_TO_v1.1.0.md](versions/v1.1.0/MIGRATION_v1.0.0_TO_v1.1.0.md).
-Detailed changes: [CHANGELOG.md](versions/v1.1.0/CHANGELOG.md).
+Detailed changes: [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
