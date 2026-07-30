@@ -7,7 +7,7 @@ The short version:
 
 ```bash
 claude plugin marketplace add DamianBuilds-ai/atlas-method
-claude plugin install atlas-method@atlas-method-marketplace
+claude plugin install atlas-method@damianbuilds
 ```
 
 That document also covers installing from a local clone, trying the plugin

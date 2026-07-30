@@ -1,5 +1,5 @@
 {
-  "name": "atlas-method-marketplace",
+  "name": "damianbuilds",
   "description": "Official Atlas Method plugin marketplace. Self-hosted distribution via relative path. To distribute via git ref instead, change source to: {\"source\":\"github\",\"repo\":\"DamianBuilds-ai/atlas-method\",\"ref\":\"v1.1.0\"}.",
   "owner": {
     "name": "Damian Yazbeck",

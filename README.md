@@ -22,7 +22,7 @@ Install the plugin, run the init skill, and you have a working personal operatin
 
 ```bash
 claude plugin marketplace add DamianBuilds-ai/atlas-method
-claude plugin install atlas-method@atlas-method-marketplace
+claude plugin install atlas-method@damianbuilds
 ```
 
 Then run `/atlas-method:atlas-init` from your project directory to scaffold the starter files.

@@ -6,7 +6,7 @@ The plugin ships three commands, four lifecycle hooks, and an init skill. The pl
 
 ```bash
 claude plugin marketplace add DamianBuilds-ai/atlas-method
-claude plugin install atlas-method@atlas-method-marketplace
+claude plugin install atlas-method@damianbuilds
 ```
 
 The first command registers the marketplace catalog from the GitHub repo. The second installs the plugin from it.
@@ -15,7 +15,7 @@ This repo carries versioned snapshots and build tooling you do not need. Sparse 
 
 ```bash
 claude plugin marketplace add DamianBuilds-ai/atlas-method --sparse .claude-plugin plugins
-claude plugin install atlas-method@atlas-method-marketplace
+claude plugin install atlas-method@damianbuilds
 ```
 
 ## Install from a local clone
@@ -24,7 +24,7 @@ If you have cloned the repository already:
 
 ```bash
 claude plugin marketplace add /path/to/atlas-method
-claude plugin install atlas-method@atlas-method-marketplace
+claude plugin install atlas-method@damianbuilds
 ```
 
 The marketplace catalog at the repo root points at `plugins/atlas-method/` automatically.
@@ -114,7 +114,7 @@ Atlas Method files fall into two categories.
 Updating is two steps, because the marketplace catalog and the plugin are refreshed separately. Refreshing the catalog alone does not upgrade an installed plugin.
 
 ```bash
-claude plugin marketplace update atlas-method-marketplace
+claude plugin marketplace update damianbuilds
 claude plugin update atlas-method
 ```
 
