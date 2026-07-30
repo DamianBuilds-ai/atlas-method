@@ -1,6 +1,6 @@
 # Installing Atlas Method
 
-The plugin ships three commands, four lifecycle hooks, and an init skill. The plugin path is the recommended route. A manual fallback for Windows users and plugin-averse setups is at the end.
+The plugin ships three skills, four hook scripts across three lifecycle events, and five scaffold templates. The plugin path is the recommended route. A manual fallback for Windows users and plugin-averse setups is at the end.
 
 ## Install from GitHub (recommended)
 
@@ -43,7 +43,7 @@ Opens a session with the plugin active but not permanently installed. Useful for
 claude plugin details atlas-method
 ```
 
-Confirm that `/atlas-method:atlas`, `/atlas-method:newbot`, and `/atlas-method:atlas-init` all appear under Commands. If the commands section is empty, the plugin is not delivering correctly.
+Confirm the component inventory reports `Skills (3)`, listing `atlas`, `atlas-init`, and `newbot`. All three are invoked as slash commands (`/atlas-method:atlas`, `/atlas-method:newbot`, `/atlas-method:atlas-init`), but the inventory groups them under Skills rather than Commands, so do not go looking for a Commands section. If Skills is empty or shows fewer than three, the plugin is not delivering correctly.
 
 One trap worth naming: running `claude plugin validate .` from the repo root validates the marketplace catalog, not the plugin, and returns a passing check even when the plugin delivers zero commands. It does print which manifest it is reading, so check that first line. To validate the plugin manifest specifically:
 

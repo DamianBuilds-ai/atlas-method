@@ -87,7 +87,7 @@ Main session orchestrates. Tiered agents do the work. Output flows back through 
 
 ## Scaffold a domain
 
-`/newbot` asks 4 questions and scaffolds a new domain in 2 minutes.
+`/atlas-method:newbot` asks 4 questions and scaffolds a new domain in 2 minutes.
 
 <div align="center">
   <img src="assets/newbot-flow.svg" alt="Newbot flow diagram: running /newbot walks through four questions (domain name, archetype from seven options, one-line description, confirm scaffold), then generates the domain from a template (DOMAIN.md trunk, QUEUE/HANDOFF/IDEAS, slash command), outputs a routing snippet for CLAUDE.md, and finishes with the domain ready in about two minutes." width="520" />
