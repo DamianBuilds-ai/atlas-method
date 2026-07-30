@@ -53,6 +53,16 @@ A new domain is a new tree, opened by a new skill. A new sub-topic is a new leaf
 
 ---
 
+## What actually broke
+
+This method has been running daily for months, which means it has failed in ways a fresh repository has not had time to. [FIELD-NOTES.md](docs/FIELD-NOTES.md) is the honest postmortem: six rules that were real, ratified, written down, and not in force, all found in a single week.
+
+They turned out to be the same bug six times. A ratified model pin that prose elsewhere in the same file silently overrode. A guard whose match list could never match. Two documents stating different size caps, so neither was enforced. A formatting hook with no file-type scope. A validator that passed while checking the wrong object. Install instructions for a command that does not exist.
+
+The lesson that shaped most of the rules below: **if you cannot point at the code, hook, or check that enforces a rule, you do not have that rule. You have a note about it.**
+
+---
+
 ## Agents do the work
 
 Main session orchestrates. Tiered agents do the work. Output flows back through `agent-outputs/` so context stays lean.

@@ -6,6 +6,28 @@ This project uses two-track versioning. The **public** version (this repo) and t
 
 The format follows the spirit of Keep a Changelog, and the public track adheres to Semantic Versioning.
 
+## [Unreleased]
+
+### Added
+- **Claude Code plugin** at `plugins/atlas-method/` (plugin version `0.1.0`), installable via the marketplace catalog at the repository root. Ships three skills (`/atlas-method:atlas`, `/atlas-method:newbot`, `/atlas-method:atlas-init`), four manifest-wired lifecycle hooks, and five scaffold templates. Projected always-on context cost is about 165 tokens. Install is `claude plugin marketplace add DamianBuilds-ai/atlas-method` followed by `claude plugin install atlas-method@damianbuilds`. Verified end to end by a full install round trip, not by validation alone.
+- **`docs/FIELD-NOTES.md`**: a postmortem on six rules that were ratified, documented, and not in force, all surfaced in one week. They share a single root cause, a gap between a stated rule and an enforced one, and the document argues for enforcement that cannot silently disagree with its own documentation.
+- Migration guidance for users who installed by hand before the plugin existed, an uninstall section stating what does and does not get removed, and an updating section. Updating is two steps because the catalog and the installed plugin refresh separately.
+- The three example files that `examples/example-domain` had always referenced and never shipped: `READING_LOG.md`, `READING-SHELF.md`, `READING-NOTES.md`.
+
+### Changed
+- **The plugin lives in a subdirectory, deliberately.** `plugins/atlas-method/` contains no reference outside itself, so the versioned snapshots and internal build tooling in this repository provably cannot ship to an adopter.
+- `README.md` now leads with the plugin rather than `git clone`, and links to `INSTALL.md` instead of duplicating it. The two INSTALL copies had drifted precisely because the same instructions lived in two places.
+- Marketplace named `damianbuilds`, so install reads `atlas-method@damianbuilds`. Settled before first publication because the `@marketplace` suffix is required and renaming it afterwards is a breaking change for anyone who has already added it.
+
+### Fixed
+- **Both INSTALL documents described a command that does not exist**: `claude plugin install <filesystem-path>`. Installation resolves only through a registered catalog. Every command in the install documentation has now been verified against the tool's own help output.
+- The README "Detailed changes" link pointed at a snapshot changelog whose newest entry was 1.0.0, so it did not even cover the snapshot containing it.
+- Restored three things a previous INSTALL revision had silently dropped: the CANONICAL versus SCAFFOLD distinction, the version note, and the warning that two hooks cannot be declared in a plugin manifest and require manual wiring. The second of those matters most, because one of the two carries the whole agent dispatch discipline and its absence raises no error.
+
+### Known
+- `VERSION` says `1.1.4` and the git tags agree, but the newest complete snapshot in `versions/` is `v1.1.0`, so the manual install path installs v1.1.0. Documented rather than papered over; no snapshot was backfilled and no version number was hand-patched.
+- `assets/repo-layout.svg` predates the plugin and does not show it.
+
 ## [1.1.4] - 2026-06-05
 
 ### Added
