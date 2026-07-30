@@ -5,6 +5,10 @@ Atlas Method is a lean-by-design documentation methodology and template for runn
 > This file is the single source of truth for ALL AI coding agents, whatever the tool (Claude Code, Z Code, Cursor, etc.).
 > Rules live here and only here. Do not duplicate them elsewhere.
 
+> **Two systems live in this repo. Do not confuse them.**
+> This repo is *developed* under **gearbox**, a separate multi-agent protocol by Stan Yan (`real-stanyan/gearbox`). The methodology this repo *distributes* is **Atlas Method**. Neither is built from the other, and adopting one here is not an endorsement of merging them.
+> Nothing gearbox installs here reaches users. The plugin payload is `plugins/atlas-method/` and the manual-install snapshots live in `versions/`; gearbox touches neither. So this file, `CONTEXT.md`, the root `CLAUDE.md` shell, and `docs/gearbox-adr/` govern how this repo is worked on. They are not part of the methodology it teaches.
+
 ## Tech stack
 
 Markdown documentation (methodology + templates)
@@ -67,9 +71,9 @@ Hard rules:
 Four rules (ADR-0007):
 
 - **Always merge via merge commit** - never squash, never rebase: the why behind small-step commits is a protocol asset (the repo is the only shared memory between sessions), and squashing is equivalent to deleting memory; locking in one style keeps history predictable.
-- **Who merges**: the PR's author agent merges it themself once CI is green. Protocol changes follow the tier system (see "Changing the protocol itself"): L1 waits for `damianyaz-stack` agreement, L2 is autonomous.
-- **A second agent's review is not mandatory**: in serial repos only one shift is present at a time, and forcing mutual review would block at handoff boundaries; parallel lanes (ADR-0048) don't change this - review stays optional, because the quality backstop never depended on serialization: the CI gate + the `damianyaz-stack`'s after-the-fact veto (revert + reopen the issue), plus branch protection where configured (ADR-0042).
-- **Don't take over someone else's open PR** - that's a mid-task handoff (see While working). Exception: the handoff issue explicitly transfers it, or the `damianyaz-stack` directs it.
+- **Who merges**: the PR's author agent merges it themself once CI is green. Protocol changes follow the tier system (see "Changing the protocol itself"): L1 waits for `DamianBuilds-ai` agreement, L2 is autonomous.
+- **A second agent's review is not mandatory**: in serial repos only one shift is present at a time, and forcing mutual review would block at handoff boundaries; parallel lanes (ADR-0048) don't change this - review stays optional, because the quality backstop never depended on serialization: the CI gate + the `DamianBuilds-ai`'s after-the-fact veto (revert + reopen the issue), plus branch protection where configured (ADR-0042).
+- **Don't take over someone else's open PR** - that's a mid-task handoff (see While working). Exception: the handoff issue explicitly transfers it, or the `DamianBuilds-ai` directs it.
 
 If a PR is still hanging open at shift-end, the task isn't done: per item 3 of On ending a shift, write progress into the Task issue's comment and leave the PR open.
 
@@ -79,7 +83,7 @@ Agents can modify AGENTS.md, but **the change is tiered by its content** (ADR-00
 
 | Tier | Content | Process |
 |---|---|---|
-| **L1 strict tier** | Hard rules / Gate command / Tech stack / this section itself | issue + ADR + PR, **and the agent may only merge after the `damianyaz-stack` explicitly agrees, in the session or in a PR comment** |
+| **L1 strict tier** | Hard rules / Gate command / Tech stack / this section itself | issue + ADR + PR, **and the agent may only merge after the `DamianBuilds-ai` explicitly agrees, in the session or in a PR comment** |
 | **L2 autonomous tier** | Working agreement (except Gate) / the index (Where to find things) | issue + ADR + PR, agent may merge autonomously |
 
 
@@ -108,7 +112,7 @@ General rules (apply to both tiers):
 
 > Why so strict: agents easily use "optional + purely additive" as an L2 channel to expand the protocol's boundaries (see the PR #21 retrospective - subagent-system referenced L1/L2 but self-merged as L2). This criterion closes off that path.
 
-L1's "explicit agreement" is a weak-b form: it's enough for the `damianyaz-stack` to say "agreed" in the session or write "agreed" in a PR comment, and the agent presses the merge button itself. **For the PR-comment path, only a comment authored by the GitHub account `damianyaz-stack` names counts (ADR-0034)** - anyone else's "agreed" is not L1 approval. **In a repo with more than one human collaborator, only the PR-comment path is valid L1 approval (ADR-0042)** - in-session agreement stops counting (including in the maintainer's own session): in-session approval leaves no verifiable trace, so a merged L1 PR without the maintainer's comment would be indistinguishable from an impersonated approval. Single-human repos keep both paths. **GitHub's Approve button is not required** - the cost is that the `damianyaz-stack` becomes the L1 bottleneck, and that cost is accepted.
+L1's "explicit agreement" is a weak-b form: it's enough for the `DamianBuilds-ai` to say "agreed" in the session or write "agreed" in a PR comment, and the agent presses the merge button itself. **For the PR-comment path, only a comment authored by the GitHub account `DamianBuilds-ai` names counts (ADR-0034)** - anyone else's "agreed" is not L1 approval. **In a repo with more than one human collaborator, only the PR-comment path is valid L1 approval (ADR-0042)** - in-session agreement stops counting (including in the maintainer's own session): in-session approval leaves no verifiable trace, so a merged L1 PR without the maintainer's comment would be indistinguishable from an impersonated approval. Single-human repos keep both paths. **GitHub's Approve button is not required** - the cost is that the `DamianBuilds-ai` becomes the L1 bottleneck, and that cost is accepted.
 
 > This repo is downstream of Gearbox. Backfill follows the pull model (ADR-0026): step 4 of the three start-of-shift steps runs `gearbox-version` to self-check the protocol version, and `gearbox-update` to backfill if it's behind - it doesn't depend on upstream pushing, it proactively aligns with upstream.
 
@@ -139,7 +143,7 @@ Serial single-human repos need none of this - with one live shift, the rules abo
 - **Handoff issues are per-lane**: shift-end rule 4 unchanged in shape, but a starting shift reads **all** open handoff issues, takes over **at most one** lane (claim its listed tasks, close its handoff), and leaves other lanes' handoffs open - closing another live lane's handoff is stealing its baton. A **"context only"** handoff (lane finished, nothing transfers) is closed by its first reader after reading.
 - **Terminal declarations (ADR-0009) are repo-level, not lane-level** - see On ending a shift.
 - **Protocol changes serialize at merge time**: two lanes may each open a protocol PR, but ADR numbers and the version bump are claimed at merge, not at branch time. Before merging: re-fetch; if a competing protocol PR landed first, renumber your ADR and recompute the version (latest tag + segment, ADR-0028) inside your PR, then merge.
-- A stalled lane is released by the `damianyaz-stack`: unassign its tasks, close its handoff (the stale-claim rule in ADR-0047 already makes dangling assignments non-binding).
+- A stalled lane is released by the `DamianBuilds-ai`: unassign its tasks, close its handoff (the stale-claim rule in ADR-0047 already makes dangling assignments non-binding).
 
 ### Branch hygiene (optional)
 
@@ -160,7 +164,7 @@ Division of labor is a project-level property; the template doesn't presume one 
 2. **Leave it blank**: the default rule = **Task-issue claim-based ownership** - whoever claims a task sees it through start to finish (see While working); tasks aren't routed by agent specialty.
 3. **Single-agent project**: delete this whole section (it's not a gate anchor, so deleting it won't break the gate).
 
-**Current choice: option 2, the default rule.** This repo is single-maintainer today (damianyaz-stack); a second collaborator (Stan) is expected to join soon, at which point Task-issue claim-based ownership is what makes parallel shifts (see "Parallel shifts") work without pre-assigning specialties. Revisit if a real capability split emerges.
+**Current choice: option 2, the default rule.** This repo is single-maintainer today (DamianBuilds-ai); a second collaborator (Stan) is expected to join soon, at which point Task-issue claim-based ownership is what makes parallel shifts (see "Parallel shifts") work without pre-assigning specialties. Revisit if a real capability split emerges.
 
 ## Where to find things
 
