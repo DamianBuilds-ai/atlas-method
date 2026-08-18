@@ -1,0 +1,70 @@
+name: v2 packaging guard
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  packaging-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # (a) Installer payload must not contain gearbox ceremony markers.
+      # Checked paths: templates/ and plugins/atlas-method/ (if present).
+      - name: no gearbox ceremony in installer payload
+        run: |
+          PAYLOAD_DIRS=""
+          [ -d templates ] && PAYLOAD_DIRS="$PAYLOAD_DIRS templates"
+          [ -d plugins/atlas-method ] && PAYLOAD_DIRS="$PAYLOAD_DIRS plugins/atlas-method"
+          if [ -z "$PAYLOAD_DIRS" ]; then
+            echo "No installer payload directories found - skipping marker check"
+            exit 0
+          fi
+          FOUND=$(grep -rl \
+            --include="*.md" --include="*.txt" --include="*.js" --include="*.sh" \
+            -e "shift start" \
+            -e "gearbox-adr" \
+            -e "never-squash" \
+            $PAYLOAD_DIRS 2>/dev/null || true)
+          # L1/L2 checked separately to avoid matching plain "L1" in unrelated text
+          FOUND_L1L2=$(grep -rl \
+            --include="*.md" --include="*.txt" --include="*.js" --include="*.sh" \
+            -e "L1/L2" \
+            $PAYLOAD_DIRS 2>/dev/null || true)
+          if [ -n "$FOUND" ] || [ -n "$FOUND_L1L2" ]; then
+            echo "FAIL: gearbox ceremony markers found in installer payload:"
+            [ -n "$FOUND" ] && echo "$FOUND"
+            [ -n "$FOUND_L1L2" ] && echo "$FOUND_L1L2"
+            exit 1
+          fi
+          echo "OK: no gearbox ceremony markers in installer payload"
+
+      # (b) templates/CLAUDE.md must be exactly one line: @AGENTS.md
+      - name: templates/CLAUDE.md is exactly @AGENTS.md
+        run: |
+          if [ ! -f templates/CLAUDE.md ]; then
+            echo "FAIL: templates/CLAUDE.md does not exist"
+            exit 1
+          fi
+          CONTENT=$(cat templates/CLAUDE.md)
+          if [ "$CONTENT" != "@AGENTS.md" ]; then
+            echo "FAIL: templates/CLAUDE.md must contain exactly '@AGENTS.md'"
+            echo "Got: $CONTENT"
+            exit 1
+          fi
+          echo "OK: templates/CLAUDE.md is exactly @AGENTS.md"
+
+      # (c) templates/AGENTS.md must not exceed 250 lines.
+      - name: templates/AGENTS.md line cap (250 lines)
+        run: |
+          if [ ! -f templates/AGENTS.md ]; then
+            echo "FAIL: templates/AGENTS.md does not exist"
+            exit 1
+          fi
+          LINES=$(wc -l < templates/AGENTS.md)
+          if [ "$LINES" -gt 250 ]; then
+            echo "FAIL: templates/AGENTS.md is $LINES lines (cap is 250)"
+            exit 1
+          fi
+          echo "OK: templates/AGENTS.md is $LINES lines (cap 250)"
