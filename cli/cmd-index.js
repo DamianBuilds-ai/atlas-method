@@ -1,6 +1,7 @@
 // cmd-index.js - atlas index [--repo path] [--gazetteer path] [--db path]
-// Full rebuild of the FTS5 index. Walks paths in gazetteer.repos manifest.
-// Indexes: *.md files (maps, leaves, ADRs, archived batons) + *.jsonl state files.
+// Full rebuild of the FTS5 index. Walks paths in gazetteer.repos manifest,
+// then unconditionally indexes ~/.atlas/state/*.jsonl (local JSONL state).
+// Draft 3 s. 8: retrieve() always hits local FTS5 + local JSONL.
 
 import { openDb, defaultDbPath } from './db.js';
 import { readGazetteer, defaultGazetteerPath } from './gazetteer.js';
@@ -11,6 +12,11 @@ import { homedir } from 'node:os';
 // Max chars to store per doc chunk. Keeps index lean.
 const CHUNK_MAX = 4000;
 
+/** Default state directory: ~/.atlas/state/ */
+function defaultStateDir() {
+  return join(homedir(), '.atlas', 'state');
+}
+
 export async function cmdIndex(args) {
   let dbPath = defaultDbPath();
   let gazetteerPath = defaultGazetteerPath();
@@ -20,6 +26,14 @@ export async function cmdIndex(args) {
     if (args[i] === '--db' && args[i + 1]) dbPath = args[++i];
     else if (args[i] === '--gazetteer' && args[i + 1]) gazetteerPath = args[++i];
     else if (args[i] === '--repo' && args[i + 1]) singleRepo = args[++i];
+  }
+
+  // Safety: --repo without --db would wipe the entire production index and only
+  // re-index one path. Refuse to prevent data loss.
+  if (singleRepo && dbPath === defaultDbPath()) {
+    console.error('atlas index: --repo requires --db <path> to avoid wiping the production index.');
+    console.error('  Use --db to point at a temporary database, or omit --repo for a full rebuild.');
+    process.exit(1);
   }
 
   const db = openDb(dbPath);
@@ -38,11 +52,47 @@ export async function cmdIndex(args) {
     total += count;
   }
 
+  // Always also index ~/.atlas/state/*.jsonl regardless of gazetteer contents.
+  // Draft 3 s. 8: local JSONL is always part of the index so retrieve() hits it.
+  // This runs even when --repo is given (scoped test mode), so refresh + index
+  // round-trips work in a temp DB.
+  const stateCount = indexStateFiles(db);
+  if (stateCount > 0) {
+    console.log(`  indexed ${stateCount} chunks from state files`);
+    total += stateCount;
+  }
+
   // Record index timestamp.
   db.prepare(`INSERT OR REPLACE INTO _meta(key, value) VALUES ('indexed_at', ?)`).run(new Date().toISOString());
   db.prepare(`INSERT OR REPLACE INTO _meta(key, value) VALUES ('total_chunks', ?)`).run(String(total));
 
   console.log(`atlas index: done. ${total} chunks indexed.`);
+}
+
+/**
+ * Index all *.jsonl files found in ~/.atlas/state/.
+ * Returns chunk count. Skips gracefully if the dir does not exist.
+ */
+function indexStateFiles(db) {
+  const stateDir = defaultStateDir();
+  if (!existsSync(stateDir)) return 0;
+
+  let entries;
+  try { entries = readdirSync(stateDir); } catch { return 0; }
+
+  let count = 0;
+  const insert = db.prepare(`INSERT INTO docs(source, domain, kind, title, body) VALUES (?,?,?,?,?)`);
+
+  for (const entry of entries) {
+    if (!entry.endsWith('.jsonl')) continue;
+    const filePath = join(stateDir, entry);
+    const chunks = fileToChunks(filePath, stateDir);
+    for (const c of chunks) {
+      insert.run(c.source, c.domain, c.kind, c.title, c.body);
+      count++;
+    }
+  }
+  return count;
 }
 
 /** Walk a repo directory and index eligible files. Returns chunk count. */
@@ -84,7 +134,7 @@ function classifyMd(relPath) {
   const name = basename(relPath, '.md').toLowerCase();
   if (name.endsWith('_adr') || relPath.includes('/adrs/') || relPath.includes('/decisions/')) return 'adr';
   if (name.includes('baton') || relPath.includes('/batons/') || relPath.includes('/sessions/')) return 'baton';
-  if (name.endsWith('_map') || name === 'map') return 'map';
+  if (name.endsWith('_map') || name.endsWith('-map') || name === 'map') return 'map';
   // Leaves: anything in a docs/ or leaves/ dir, or small domain sub-docs.
   if (relPath.includes('/docs/') || relPath.includes('/leaves/')) return 'leaf';
   // Top-level domain docs are maps.
@@ -92,11 +142,19 @@ function classifyMd(relPath) {
   return 'leaf';
 }
 
-/** Extract domain slug from path heuristic. */
+/**
+ * Extract domain slug from path heuristic.
+ * First directory component is used for nested files.
+ * For top-level files, the naming convention {domain}-map.md or {domain}_map.md
+ * is recognised (e.g. treasury-map.md -> 'treasury').
+ */
 function inferDomain(relPath) {
-  // First directory component is often the domain.
   const parts = relPath.split('/');
   if (parts.length > 1) return parts[0].toLowerCase();
+  // Top-level file: try to extract domain from {domain}-map.md or {domain}_map.md.
+  const stem = basename(relPath, '.md').toLowerCase();
+  const mapMatch = stem.match(/^([a-z][a-z0-9-]*)[-_]map$/);
+  if (mapMatch) return mapMatch[1];
   return '';
 }
 
