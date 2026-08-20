@@ -7,6 +7,7 @@
 import { cmdSearch } from './cmd-search.js';
 import { cmdIndex } from './cmd-index.js';
 import { cmdRefresh } from './cmd-refresh.js';
+import { cmdOrientation } from './cmd-orientation.js';
 
 const [,, cmd, ...rest] = process.argv;
 
@@ -23,6 +24,11 @@ Commands:
   refresh [--domain X]
       Pull open GitHub Issues via gh issue list and reconcile into local JSONL.
 
+  orientation --domain X [--out FILE]
+      Generate the 80-line orientation view from local JSONL state.
+      Writes to stdout and optionally to FILE. Fail-open: emits a visible
+      notice if no local state is found, never silences.
+
 Options for all commands:
   --help    Show this message
 
@@ -35,6 +41,7 @@ switch (cmd) {
   case 'search': await cmdSearch(rest); break;
   case 'index':  await cmdIndex(rest);  break;
   case 'refresh': await cmdRefresh(rest); break;
+  case 'orientation': await cmdOrientation(rest); break;
   case '--help':
   case '-h':
   case undefined:
