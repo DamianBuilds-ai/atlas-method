@@ -50,13 +50,13 @@ export async function cmdSearch(args) {
   try {
     rows = db.prepare(sql).all(...params);
   } catch (err) {
-    // FTS5 syntax error - fall back to a plain unquoted search.
     if (err.message && err.message.includes('fts5')) {
-      const plainSql = domain
-        ? sql.replace(ftsQuery, '"' + query.replace(/"/g, '""') + '"')
-        : sql;
+      // FTS5 syntax error (e.g. unbalanced quotes, illegal operators).
+      // Fall back to a plain quoted-phrase search using the raw query text.
+      const quotedQuery = '"' + query.replace(/"/g, '""') + '"';
+      const fallbackParams = domain ? [quotedQuery, domain, top] : [quotedQuery, top];
       try {
-        rows = db.prepare(domain ? sql : sql).all(...params);
+        rows = db.prepare(sql).all(...fallbackParams);
       } catch (_) {
         console.error(`atlas search: query error: ${err.message}`);
         process.exit(1);
