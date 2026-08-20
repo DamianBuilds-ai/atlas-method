@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // atlas CLI - M8 + M3 + M4 implementation
-// Node 22+ required: uses node:sqlite (builtin FTS5, experimental as of 22.5.0)
-// Run as: node --experimental-sqlite cli/atlas.js <command> [args]
-// When invoked via npx/bin the shebang line handles flag passthrough via
-// the NODE_OPTIONS env variable pattern documented in the PR body.
+// Node >=22.5.0 required: uses node:sqlite (builtin FTS5, experimental on 22.x).
+// Invoke via atlas-launch.sh (the bin entry) which sets --experimental-sqlite.
+// Direct invocation: node --experimental-sqlite cli/atlas.js <command> [args]
 
 import { cmdSearch } from './cmd-search.js';
 import { cmdIndex } from './cmd-index.js';
@@ -27,7 +26,8 @@ Commands:
 Options for all commands:
   --help    Show this message
 
-Node floor: >=22.5.0 (node:sqlite builtin with FTS5)
+Node floor: >=22.5.0 (node:sqlite builtin with FTS5, experimental on 22.x).
+Node 24+: no flag needed; ExperimentalWarning suppressed by atlas-launch.sh.
 Binding: node:sqlite (builtin) - no native addon, no npm install needed.
 `.trim();
 
