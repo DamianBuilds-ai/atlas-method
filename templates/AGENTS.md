@@ -160,6 +160,7 @@ audit or re-index. The nightly Action does that.
 | Generated orientation view | 80 lines | Generated to cap |
 | Session baton | 40 lines | Wrap writes to cap |
 | Leaf | 200 lines | CI advisory + staleness flag |
+| Docs-mode / JSONL view | 80 lines | Lint + wash |
 
 ---
 
