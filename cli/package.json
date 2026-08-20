@@ -1,0 +1,17 @@
+{
+  "name": "atlas-method-cli",
+  "description": "Atlas Method CLI - local JSONL state cache + FTS5 search over maps, leaves, ADRs, and state",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "atlas": "./atlas-launch.sh"
+  },
+  "scripts": {
+    "test": "node --experimental-sqlite --no-warnings ../test/smoke.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "keywords": ["atlas-method", "personal-os", "cli", "search"],
+  "license": "MIT"
+}
