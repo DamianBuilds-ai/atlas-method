@@ -1,7 +1,7 @@
 // cmd-refresh.js - atlas refresh [--domain X] [--state path]
-// Pulls open GitHub Issues via `gh issue list --json` (LIST endpoint only,
+// Pulls GitHub Issues via `gh issue list --json --state all` (LIST endpoint only,
 // never the Search API) and reconciles into the local JSONL state file.
-// Local-only rows (issue: null) are never touched.
+// Local-only rows (issue: null) are NEVER modified - they are sacrosanct.
 
 import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -12,6 +12,9 @@ import { randomBytes } from 'node:crypto';
 const DEFAULT_STATE_PATH = join(homedir(), '.atlas', 'state', 'local.jsonl');
 const HEADER = JSON.stringify({ schema: 'atlas-state', version: 1 });
 
+// Six valid record kinds per Draft 3 s. 7 schema.
+const VALID_KINDS = new Set(['task', 'decision', 'finding', 'suggestion', 'idea', 'carried']);
+
 export async function cmdRefresh(args) {
   let domain = '';
   let statePath = DEFAULT_STATE_PATH;
@@ -21,18 +24,22 @@ export async function cmdRefresh(args) {
     else if (args[i] === '--state' && args[i + 1]) statePath = args[++i];
   }
 
-  // Verify gh is available.
+  // Verify gh is available. Fail open with a visible notice if not authenticated -
+  // M7 SessionStart will call refresh; a hook must not block the session.
   try { execSync('gh auth status --hostname github.com', { stdio: 'pipe' }); }
   catch {
-    console.error('atlas refresh: gh CLI not authenticated. Run: gh auth login');
-    process.exit(1);
+    console.log('atlas refresh: skipped (gh unauthenticated - run: gh auth login)');
+    return;
   }
 
-  // Pull issues via LIST endpoint. Labels filter: domain:X if domain given.
+  // Pull ALL issues (open + closed) via LIST endpoint.
+  // --state all ensures closed issues are reconciled to done/declined in local state.
+  // --limit 1000 reduces truncation risk; warn if the page is full (may need pagination).
   // NEVER uses --search / --app github-search or the Search API.
   // gh issue list uses the Issues list REST endpoint (rate limit 5000/hr, not 30/min).
   const labelFlag = domain ? `--label "domain:${domain}"` : '';
-  const ghCmd = `gh issue list ${labelFlag} --state open --limit 200 --json number,title,body,labels,state,createdAt,updatedAt`;
+  const LIMIT = 1000;
+  const ghCmd = `gh issue list ${labelFlag} --state all --limit ${LIMIT} --json number,title,body,labels,state,createdAt,updatedAt`;
 
   let rawIssues;
   try {
@@ -50,12 +57,20 @@ export async function cmdRefresh(args) {
     }
   }
 
+  if (rawIssues.length >= LIMIT) {
+    console.warn(`atlas refresh: WARNING - result count hit the --limit ${LIMIT} ceiling. Some issues may be missing. Consider reducing --domain scope or paginating manually.`);
+  }
+
   // Load existing JSONL state.
   const existing = loadState(statePath);
-  const byIssue = new Map(); // issue# -> existing record
 
+  // Build a map of issue# -> record for rows that came from GitHub sync.
+  // INVARIANT: rows with issue === null are local-only and MUST NOT be modified.
+  const byIssue = new Map();
   for (const rec of existing) {
-    if (rec.issue) byIssue.set(rec.issue, rec);
+    if (rec.issue !== null && rec.issue !== undefined) {
+      byIssue.set(rec.issue, rec);
+    }
   }
 
   const now = new Date().toISOString();
@@ -69,7 +84,7 @@ export async function cmdRefresh(args) {
     const status = issue.state === 'CLOSED' ? (labels.includes('declined') ? 'declined' : 'done') : 'open';
 
     if (byIssue.has(issueNum)) {
-      // Update existing record.
+      // Update existing record. Local-only rows (issue: null) never reach this path.
       const rec = byIssue.get(issueNum);
       rec.title = issue.title;
       rec.body = (issue.body || '').slice(0, 4000);
@@ -80,11 +95,12 @@ export async function cmdRefresh(args) {
       rec.source = 'issue-sync';
       updated++;
     } else {
-      // Create new record.
-      const id = `${kindFromLabels(labels)}-${randomBytes(4).toString('hex')}`;
+      // Create new record from GitHub issue.
+      const kind = kindFromLabels(labels);
+      const id = `${kind}-${randomBytes(4).toString('hex')}`;
       existing.push({
         id,
-        kind: kindFromLabels(labels),
+        kind,
         domain: issueDomain,
         title: issue.title,
         body: (issue.body || '').slice(0, 4000),
@@ -100,8 +116,9 @@ export async function cmdRefresh(args) {
   }
 
   saveState(statePath, existing);
+  const localOnly = existing.filter(r => r.issue === null || r.issue === undefined).length;
   const total = existing.length;
-  console.log(`atlas refresh: ${created} created, ${updated} updated. Total records: ${total}.`);
+  console.log(`atlas refresh: ${created} created, ${updated} updated. Total records: ${total} (${localOnly} local-only).`);
 }
 
 /** Load all records from a JSONL state file. Skips header and comment lines. */
@@ -128,10 +145,16 @@ function saveState(statePath, records) {
   writeFileSync(statePath, lines.join('\n') + '\n', 'utf8');
 }
 
-/** Infer kind from GitHub issue labels. Defaults to 'task'. */
+/**
+ * Infer kind from GitHub issue labels. Validates against the six schema kinds.
+ * Unknown kinds default to 'task'; the raw label is preserved in the labels array.
+ */
 function kindFromLabels(labels) {
   for (const l of labels) {
-    if (l.startsWith('kind:')) return l.slice(5);
+    if (l.startsWith('kind:')) {
+      const candidate = l.slice(5);
+      return VALID_KINDS.has(candidate) ? candidate : 'task';
+    }
   }
   return 'task';
 }
