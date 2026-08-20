@@ -53,15 +53,15 @@ inline it in the hook command registered in your settings file.
 
 ### Fail-open contract
 
-Any error - invalid timezone, missing `jq`, unexpected date format - results
-in empty output and exit code 0. The hook is silent; the session continues
+Any error - invalid timezone, unexpected `date` command failure - results in
+empty output and exit code 0. The hook is silent; the session continues
 normally. The date anchor simply does not appear rather than blocking the
 session. This follows the M7 rule in Draft 3 section 9: "Hooks fail open.
 Degraded path must be visible."
 
-`jq` must be installed for the hook to produce output. If `jq` is absent the
-hook exits silently. Install with your package manager (`brew install jq`,
-`apt install jq`, etc.).
+No external dependencies beyond `date`. JSON is assembled with `printf`,
+which is a shell built-in. The earlier version required `jq`; that
+dependency has been removed.
 
 ### Verification
 
@@ -127,25 +127,23 @@ execution order.
 
 ## Wiring: Grok Build
 
-TODO - verify before wiring.
+Grok Build hook facts (sourced from `~/.grok/docs/user-guide/10-hooks.md`,
+2026-08-20 proof seat):
 
-Grok Build loads `~/.claude/settings.json` hooks by default (shared registry
-with Claude Code). If your setup uses `[compat.claude] hooks = false` in your
-Grok config (which disables shared-registry loading), you need to wire hooks
-natively in Grok's own config format.
+- **Event names:** Grok uses the same names - `SessionStart` and
+  `UserPromptSubmit` - matching Claude Code.
+- **Stdout is ignored on both events.** `UserPromptSubmit` is observe-only
+  (exit code and stdout are ignored). `SessionStart` is a passive event:
+  "stdout is ignored. Just exit 0 on success." The `hookSpecificOutput` /
+  `additionalContext` pattern used by this hook works in Claude Code but
+  **does not inject anything in Grok Build today.**
+- **Registration** follows `.grok/hooks/` (project) or a user-level
+  equivalent, and Grok also loads `~/.claude/settings.json` hooks by default
+  unless `[compat.claude] hooks = false` is set. Registration here is
+  documented for parity and for when Grok adds stdout support on these events.
 
-Native Grok hook registration uses `.grok/hooks/` in the project directory
-or a user-level equivalent. The event names that correspond to SessionStart
-and UserPromptSubmit in Grok Build are not confirmed from docs at the time
-this file was written.
-
-Verify before wiring:
-1. Check the current Grok Build hook documentation for the equivalent
-   lifecycle event names.
-2. Check whether `.grok/hooks/` is the correct registration path or whether
-   a settings file block is needed.
-3. Confirm the JSON output schema (`hookSpecificOutput.additionalContext`)
-   is the same in both tools - if Grok uses a different schema, the emit_json
-   function in datetime.sh needs a second output path.
-
-Once confirmed, the registration snippet belongs here.
+**Practical consequence:** wiring this hook in Grok Build will not cause
+errors (fail-open, exit 0), but the date will not be injected into context.
+Grok M7 orientation requires a different injection mechanism (file drop or a
+future native event) - not this JSON pattern. That mechanism is deferred to
+M7 and must not copy the `additionalContext` approach documented above.

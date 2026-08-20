@@ -18,13 +18,21 @@
 #   Example: export ATLAS_TZ=America/New_York
 #
 # FAIL OPEN
-#   Any error (bad TZ, missing jq, date command failure) produces empty
-#   output and exits 0. Claude Code continues normally; the hook is silent
-#   rather than blocking. This is the M7 contract: "Hooks fail open.
-#   Degraded path must be visible" - the visibility here is that the date
-#   anchor simply does not appear, rather than the session crashing.
+#   Any error (bad TZ, date command failure) produces empty output and
+#   exits 0. Claude Code continues normally; the hook is silent rather
+#   than blocking. This follows the M7 rule: "Hooks fail open. Degraded
+#   path must be visible." No jq dependency: JSON is assembled with printf
+#   so there is no silent missing-dependency path.
 #
-# POSIX COMPATIBLE - runs under /bin/sh; no bash-only features.
+# POSIX COMPATIBLE - runs under /bin/sh; no bash-only features; no jq.
+#
+# JSON ENCODING NOTE
+#   Date output and the static banner text contain no backslash or
+#   double-quote characters. The banner uses literal \n sequences (two
+#   characters: backslash + n) embedded in double-quoted shell strings.
+#   POSIX sh does not interpret \n in double quotes, so these are passed
+#   through to printf as-is and appear in the JSON as the valid newline
+#   escape \n, which Claude decodes correctly.
 
 main() {
     # Apply timezone override if set.
@@ -46,12 +54,10 @@ emit_banner() {
     now=$(date '+%A, %B %d %Y - %I:%M %p %Z') || return 0
     iso=$(date '+%Y-%m-%d') || return 0
 
-    banner="==================== DATE ANCHOR ====================
-TODAY IS: ${now}
-Filename date: ${iso}
-Reminder: always derive dated content from the live date command,
-not from memory. Sessions stay open for days; the model drifts.
-====================================================="
+    # Banner is a single shell string; \n sequences are literal two-char
+    # backslash-n (not actual newlines). printf %s passes them through
+    # verbatim into the JSON string, where \n is the valid newline escape.
+    banner="==================== DATE ANCHOR ====================\nTODAY IS: ${now}\nFilename date: ${iso}\nReminder: always derive dated content from the live date command,\nnot from memory. Sessions stay open for days; the model drifts.\n====================================================="
 
     emit_json "SessionStart" "$banner"
 }
@@ -65,14 +71,12 @@ emit_json() {
     event="$1"
     msg="$2"
 
-    # jq is required for correct JSON encoding of the output payload.
-    # If jq is absent the hook exits silently (fail open - no output).
-    if ! command -v jq >/dev/null 2>&1; then
-        return 0
-    fi
-
-    jq -n --arg event "$event" --arg msg "$msg" \
-        '{"hookSpecificOutput":{"hookEventName":$event,"additionalContext":$msg}}'
+    # Pure POSIX JSON assembly - no jq dependency.
+    # Date strings contain only letters, digits, spaces, colons, commas,
+    # hyphens, and the literal \n sequences added by emit_banner. None of
+    # these require further escaping in a JSON string value.
+    printf '{"hookSpecificOutput":{"hookEventName":"%s","additionalContext":"%s"}}\n' \
+        "$event" "$msg"
 }
 
 # Outer subshell + || true: any unhandled error exits 0 (fail open).
