@@ -147,3 +147,164 @@ errors (fail-open, exit 0), but the date will not be injected into context.
 Grok M7 orientation requires a different injection mechanism (file drop or a
 future native event) - not this JSON pattern. That mechanism is deferred to
 M7 and must not copy the `additionalContext` approach documented above.
+
+---
+
+## session-start.sh - SessionStart hook (M7)
+
+### Why it exists
+
+AI runners do not write a baton stub or generate the orientation view because
+the spec asked them to. That is a hook. Draft 3 s. 9 M7 states this directly:
+"Grok / Claude will not write a baton stub or generate the view because the
+spec asked. That is a hook."
+
+This hook runs at every SessionStart and performs four steps:
+
+1. Resolves the active domain from `$ATLAS_DOMAIN` or `.atlas/domain`.
+2. Attempts `atlas refresh --domain X` if `gh` is authenticated.
+3. Writes a baton stub to `sessions/current/YYYY-MM-DD_HHMM_{domain}.md`.
+4. Runs `atlas orientation --domain X --out sessions/current/orientation-{domain}.md`.
+5. **Claude Code only:** emits `additionalContext` JSON carrying the orientation
+   content so the model sees it immediately without a file read.
+
+Every step is fail-open. A failure emits a visible notice to stderr and
+continues. Exit 0 always - the session is never blocked.
+
+### File-first design (critical for Grok)
+
+Grok Build ignores hook stdout on `SessionStart` (see Grok Build section
+below). The orientation file is the primary delivery mechanism for Grok and
+for any other runner that does not support `additionalContext` injection.
+The `AGENTS.md` constitution instructs the session to read
+`sessions/current/orientation-{domain}.md` at start - that is the contract.
+Claude's `additionalContext` JSON is a bonus enhancement, never the primary.
+
+### Domain resolution
+
+Set `ATLAS_DOMAIN` to the domain slug before the hook runs:
+
+```bash
+export ATLAS_DOMAIN=treasury
+```
+
+Or create `.atlas/domain` in the project root containing only the domain slug.
+If neither is set the hook falls back to "unknown" with a visible notice.
+
+### Prerequisites
+
+- `atlas` CLI on PATH or `cli/atlas-launch.sh` in the project root.
+- `gh` CLI authenticated (`gh auth login`) for refresh to run.
+- `templates/baton-stub.md` in the project root for the full stub template.
+  A minimal inline stub is written as a fallback if the template is missing.
+
+### Installer step 1: folder trust
+
+Project hooks require the project folder to be trusted before they run.
+
+**Claude Code:**
+
+```bash
+# In the project directory:
+/hooks-trust
+# or:
+claude --trust
+```
+
+**Grok Build:**
+
+```bash
+grok plugin install --trust
+# or in an existing session:
+/hooks-trust
+```
+
+Folder trust is required for Claude Code to execute project-level hooks.
+Without it the hook registration is ignored. Run this once after cloning.
+
+---
+
+### Wiring: Claude Code (session-start.sh)
+
+Add to `.claude/settings.json` in the project root (project-level) or to
+`~/.claude/settings.json` (user-level, applies to all projects). Run
+folder trust first (see Installer step 1 above).
+
+Replace `/path/to/session-start.sh` with the actual path where you have
+placed the script (e.g. copy it from `templates/hooks/session-start.sh`).
+
+```json
+"SessionStart": [
+  {
+    "matcher": "startup|resume",
+    "hooks": [
+      {
+        "type": "command",
+        "command": "sh /path/to/session-start.sh"
+      }
+    ]
+  }
+]
+```
+
+The hook emits `additionalContext` JSON containing the orientation view.
+Claude Code injects this into the session context before the first model
+response. The model sees the orientation without needing to read the file.
+
+---
+
+### Wiring: Grok Build (session-start.sh)
+
+**Grok Build hook facts** (sourced from `~/.grok/docs/user-guide/10-hooks.md`,
+2026-08-20 proof seat):
+
+- **Event names:** `SessionStart` and `UserPromptSubmit` (same as Claude Code).
+- **Stdout is ignored on SessionStart.** "stdout is ignored. Just exit 0 on
+  success." The `hookSpecificOutput` / `additionalContext` JSON pattern this
+  hook emits works in Claude Code but **does not inject anything in Grok Build.**
+- **Registration:** `.grok/hooks/` project directory or the user-level
+  equivalent. Grok also loads `~/.claude/settings.json` hooks by default
+  unless `[compat.claude] hooks = false`.
+
+**Practical consequence for M7:** the hook still runs and still writes the
+orientation file and baton stub. The files are the delivery. The Grok session
+reads `sessions/current/orientation-{domain}.md` per the `AGENTS.md`
+constitution - that instruction is what closes the loop, not stdout injection.
+
+Registering in `.grok/hooks/session-start.json`:
+
+```json
+{
+  "event": "SessionStart",
+  "command": "sh /path/to/session-start.sh"
+}
+```
+
+Do not paste the Claude `additionalContext` JSON block into a Grok snippet
+claiming it injects. It does not. The file is the contract.
+
+### Verification
+
+After wiring, confirm the hook runs and produces files:
+
+```bash
+# Dry run in a fixture directory:
+export ATLAS_DOMAIN=myproject
+sh templates/hooks/session-start.sh
+# Expect:
+#   sessions/current/YYYY-MM-DD_HHMM_myproject.md  (baton stub, ~29 lines)
+#   sessions/current/orientation-myproject.md       (<=80 lines)
+# stderr notices visible (atlas/gh not found if uninstalled - that is correct)
+
+# Check line counts:
+wc -l sessions/current/orientation-myproject.md    # should be <=80
+wc -l sessions/current/YYYY-MM-DD_HHMM_myproject.md  # should be <=40
+```
+
+And confirm fail-open (no crash on missing atlas):
+
+```bash
+# Temporarily rename atlas or run in a PATH that excludes it:
+PATH=/usr/bin sh templates/hooks/session-start.sh
+# Expect: visible notices on stderr, exit 0, no crash.
+```
