@@ -86,6 +86,17 @@ Two additional hooks ship in the repository but are not wired automatically. The
 
 Both live at `versions/v1.1.0/hooks/`. Wiring instructions are in `versions/v1.1.0/hooks/README.md`.
 
+## Hook templates (v2 workstream)
+
+`templates/hooks/` at the repository root carries generally-useful hooks
+that ship as copy-and-wire templates rather than plugin-managed files.
+
+The first is `datetime.sh`, a time-awareness hook that prevents models from
+anchoring on stale session-start dates. It has two modes: a prominent banner
+at session open (SessionStart) and a one-line injection before every user
+message (UserPromptSubmit). See `templates/hooks/README.md` for wiring
+instructions for Claude Code and a TODO for Grok Build registration.
+
 The gap that matters most: `agent-rules-inject.sh` carries the entire agent dispatch rule set. If it is not wired, sub-agents run without dispatch discipline and no error is raised. A gap that fails loudly is acceptable; one that fails silently is not. Wire it before you start delegating work to agents.
 
 ## Migrating from a hand-installed setup
