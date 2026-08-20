@@ -15,6 +15,7 @@ const { openDb, sanitizeFtsQuery } = await import(join(cliDir, 'db.js'));
 const { cmdIndex } = await import(join(cliDir, 'cmd-index.js'));
 const { cmdSearch } = await import(join(cliDir, 'cmd-search.js'));
 const { cmdRefresh } = await import(join(cliDir, 'cmd-refresh.js'));
+const { cmdOrientation } = await import(join(cliDir, 'cmd-orientation.js'));
 
 // ---- Fixture setup ----
 const tmp = mkdtempSync(join(tmpdir(), 'atlas-smoke-'));
@@ -230,6 +231,135 @@ console.log('\n--- smoke: refresh reconcile (mock gh) ---');
     'refresh: unknown kind label defaults to task',
     issue3 && issue3.kind === 'task',
     issue3 ? `kind="${issue3.kind}"` : 'row missing'
+  );
+}
+
+// ---- cmdOrientation: happy path ----
+// Writes a fixture state dir with known records, runs orientation, asserts output.
+console.log('\n--- smoke: cmdOrientation happy path ---');
+{
+  const orientStateDir = join(tmp, 'orient-state');
+  mkdirSync(orientStateDir, { recursive: true });
+
+  const orientHeader = JSON.stringify({ schema: 'atlas-state', version: 1 });
+  const highTask = JSON.stringify({
+    id: 'task-orient01',
+    kind: 'task',
+    domain: 'atlas',
+    title: 'High priority orientation task',
+    body: '',
+    status: 'open',
+    labels: ['domain:atlas', 'priority:high'],
+    issue: null,
+    created: '2026-08-19T00:00:00Z',
+    updated: '2026-08-19T00:00:00Z',
+    source: 'session',
+  });
+  const lowTask = JSON.stringify({
+    id: 'task-orient02',
+    kind: 'task',
+    domain: 'atlas',
+    title: 'Low priority orientation task',
+    body: '',
+    status: 'open',
+    labels: ['domain:atlas', 'priority:low'],
+    issue: null,
+    created: '2026-08-19T00:00:00Z',
+    updated: '2026-08-19T00:00:00Z',
+    source: 'session',
+  });
+  const carried = JSON.stringify({
+    id: 'carried-orient03',
+    kind: 'carried',
+    domain: 'atlas',
+    title: 'Carried item from prior session',
+    body: '',
+    status: 'open',
+    labels: ['domain:atlas'],
+    issue: null,
+    created: '2026-08-19T00:00:00Z',
+    updated: '2026-08-19T00:00:00Z',
+    source: 'baton',
+  });
+  writeFileSync(
+    join(orientStateDir, 'atlas.jsonl'),
+    `${orientHeader}\n${highTask}\n${lowTask}\n${carried}\n`
+  );
+
+  const orientOutFile = join(tmp, 'orientation-atlas.md');
+  const outLines = [];
+  const origWrite = process.stdout.write.bind(process.stdout);
+  process.stdout.write = (chunk) => { outLines.push(...String(chunk).split('\n')); return true; };
+
+  await cmdOrientation(['--domain', 'atlas', '--out', orientOutFile, '--state', orientStateDir]);
+
+  process.stdout.write = origWrite;
+
+  // Read the output file directly.
+  let orientContent = '';
+  try { orientContent = readFileSync(orientOutFile, 'utf8'); } catch (e) { /* ignore */ }
+  const orientLines = orientContent.split('\n').filter(l => l !== '');
+
+  assert(
+    'orientation: output under 80 lines',
+    orientLines.length <= 80,
+    `got ${orientLines.length} lines`
+  );
+  assert(
+    'orientation: header present',
+    orientLines.some(l => l.startsWith('# Orientation')),
+    `first line: "${orientLines[0]}"`
+  );
+  assert(
+    'orientation: open items section present',
+    orientLines.some(l => l.includes('Open items')),
+    `lines: ${JSON.stringify(orientLines)}`
+  );
+  assert(
+    'orientation: high priority item appears before low priority',
+    (() => {
+      const hiIdx = orientLines.findIndex(l => l.includes('High priority'));
+      const loIdx = orientLines.findIndex(l => l.includes('Low priority'));
+      return hiIdx !== -1 && loIdx !== -1 && hiIdx < loIdx;
+    })(),
+    'priority ordering broken'
+  );
+  assert(
+    'orientation: carried items section present',
+    orientLines.some(l => l.includes('Carried items')),
+    `lines: ${JSON.stringify(orientLines)}`
+  );
+  assert(
+    'orientation: file written to --out path',
+    orientLines.length > 0,
+    'file empty or missing'
+  );
+}
+
+// ---- cmdOrientation: empty-state degraded path ----
+console.log('\n--- smoke: cmdOrientation degraded path (empty state) ---');
+{
+  const emptyStateDir = join(tmp, 'empty-state');
+  mkdirSync(emptyStateDir, { recursive: true });
+  // Write no .jsonl files - dir exists but is empty.
+
+  const degradedLines = [];
+  const origWrite = process.stdout.write.bind(process.stdout);
+  process.stdout.write = (chunk) => { degradedLines.push(...String(chunk).split('\n')); return true; };
+
+  await cmdOrientation(['--domain', 'no-domain', '--state', emptyStateDir]);
+
+  process.stdout.write = origWrite;
+
+  const allOutput = degradedLines.join('\n');
+  assert(
+    'orientation-degraded: exits 0 (no exception)',
+    true // reaching here means no exception
+  );
+  assert(
+    'orientation-degraded: visible notice line present',
+    allOutput.includes('no local state found'),
+    `got: "${allOutput.slice(0, 200)}"`
   );
 }
 
