@@ -363,6 +363,178 @@ console.log('\n--- smoke: cmdOrientation degraded path (empty state) ---');
   );
 }
 
+// ---- MUST 1 verification: baton pointer names the PRIOR baton, not the just-written stub ----
+// Fixture: sessions/current/ contains a prior baton file named with yesterday's timestamp.
+// cmdOrientation runs from that dir. The pointer in the output must name the prior file,
+// not orientation-*.md and not any file written during this orientation run itself.
+console.log('\n--- smoke: baton pointer names prior baton (not stub) ---');
+{
+  const batonFixDir = mkdtempSync(join(tmpdir(), 'atlas-baton-'));
+  const sessionsDir = join(batonFixDir, 'sessions', 'current');
+  const batonStateDir = join(batonFixDir, 'state');
+  mkdirSync(sessionsDir, { recursive: true });
+  mkdirSync(batonStateDir, { recursive: true });
+
+  // Write a prior-session baton file with a timestamp that sorts before any file
+  // created during this test run (yesterday's date, so lexicographically earlier
+  // than a 2026-08-21_* file would be if one were written today).
+  const priorBatonName = '2026-08-20_1800_atlas.md';
+  writeFileSync(join(sessionsDir, priorBatonName), '# Prior baton placeholder\n');
+
+  // State: header + one open task so the early-return guard (records.length === 0)
+  // does not fire before the baton section is assembled.
+  const batonTaskRec = JSON.stringify({
+    id: 'task-baton-smoke', kind: 'task', domain: 'atlas',
+    title: 'Baton smoke task', body: '', status: 'open',
+    labels: ['domain:atlas'], issue: null,
+    created: '2026-08-20T00:00:00Z', updated: '2026-08-20T00:00:00Z', source: 'session',
+  });
+  writeFileSync(
+    join(batonStateDir, 'atlas.jsonl'),
+    `${JSON.stringify({ schema: 'atlas-state', version: 1 })}\n${batonTaskRec}\n`
+  );
+
+  const batonOutFile = join(batonFixDir, 'orientation-atlas.md');
+  const origCwd = process.cwd();
+  process.chdir(batonFixDir);
+  try {
+    await cmdOrientation(['--domain', 'atlas', '--out', batonOutFile, '--state', batonStateDir]);
+  } finally {
+    process.chdir(origCwd);
+  }
+
+  const batonContent = readFileSync(batonOutFile, 'utf8');
+  assert(
+    'baton: latest baton section present',
+    batonContent.includes('## Latest baton'),
+    `content: ${batonContent.slice(0, 300)}`
+  );
+  assert(
+    'baton: pointer names the prior baton file',
+    batonContent.includes(priorBatonName),
+    `expected ${priorBatonName} in: ${batonContent.slice(0, 300)}`
+  );
+  assert(
+    'baton: orientation file not listed as the baton pointer',
+    !batonContent.includes('orientation-atlas.md'),
+    `orientation file leaked into pointer: ${batonContent.slice(0, 300)}`
+  );
+  rmSync(batonFixDir, { recursive: true, force: true });
+}
+
+// ---- SHOULD 3+4 verification: 90 open items must not starve blocked / baton / carried ----
+// Regression: before SECTION_RESERVE, 80 open items filled the cap leaving no room for
+// sections 2-4 (the "what to do" payload). After fix, open fills only LINE_CAP-SECTION_RESERVE
+// lines, leaving SECTION_RESERVE lines for the remaining sections.
+// SHOULD 4 also verified here: the blocked task has kind:task + blocked: label. After the
+// !hasBlockedLabel() fix to the open filter it must appear only in Blocked, not in Open.
+console.log('\n--- smoke: section starvation (90 open + 1 blocked + 1 carried) ---');
+{
+  const starvDir = mkdtempSync(join(tmpdir(), 'atlas-starv-'));
+  const starvStateDir = join(starvDir, 'state');
+  const starvSessDir = join(starvDir, 'sessions', 'current');
+  mkdirSync(starvStateDir, { recursive: true });
+  mkdirSync(starvSessDir, { recursive: true });
+
+  // Prior baton so the Latest baton section can appear.
+  writeFileSync(join(starvSessDir, '2026-08-20_1800_atlas.md'), '# Prior baton\n');
+
+  const recs = [JSON.stringify({ schema: 'atlas-state', version: 1 })];
+  for (let i = 0; i < 90; i++) {
+    recs.push(JSON.stringify({
+      id: `task-bulk-${i}`, kind: 'task', domain: 'atlas',
+      title: `Bulk open task ${i}`, body: '', status: 'open',
+      labels: ['domain:atlas', 'priority:low'], issue: null,
+      created: '2026-08-19T00:00:00Z', updated: '2026-08-19T00:00:00Z', source: 'session',
+    }));
+  }
+  // Blocked task: kind:task + blocked: label - should appear only in Blocked section.
+  recs.push(JSON.stringify({
+    id: 'task-blocked-01', kind: 'task', domain: 'atlas',
+    title: 'Blocked on external review', body: '', status: 'open',
+    labels: ['domain:atlas', 'blocked:external-review'], issue: null,
+    created: '2026-08-19T00:00:00Z', updated: '2026-08-19T00:00:00Z', source: 'session',
+  }));
+  // Carried item.
+  recs.push(JSON.stringify({
+    id: 'carried-01', kind: 'carried', domain: 'atlas',
+    title: 'Carried from prior session', body: '', status: 'open',
+    labels: ['domain:atlas'], issue: null,
+    created: '2026-08-19T00:00:00Z', updated: '2026-08-19T00:00:00Z', source: 'baton',
+  }));
+  writeFileSync(join(starvStateDir, 'atlas.jsonl'), recs.join('\n') + '\n');
+
+  const starvOut = join(starvDir, 'orientation-atlas.md');
+  const origCwd2 = process.cwd();
+  process.chdir(starvDir);
+  try {
+    await cmdOrientation(['--domain', 'atlas', '--out', starvOut, '--state', starvStateDir]);
+  } finally {
+    process.chdir(origCwd2);
+  }
+
+  const starvContent = readFileSync(starvOut, 'utf8');
+  const starvLines = starvContent.split('\n').filter(l => l !== '');
+  assert(
+    'starvation: output under 80 lines despite 90 open tasks',
+    starvLines.length <= 80,
+    `got ${starvLines.length} lines`
+  );
+  assert(
+    'starvation: blocked section present despite 90 open items',
+    starvContent.includes('## Blocked / waiting'),
+    `sections: ${starvLines.filter(l => l.startsWith('##')).join(', ')}`
+  );
+  assert(
+    'starvation: baton section present despite 90 open items',
+    starvContent.includes('## Latest baton'),
+    `sections: ${starvLines.filter(l => l.startsWith('##')).join(', ')}`
+  );
+  assert(
+    'starvation: carried section present despite 90 open items',
+    starvContent.includes('## Carried items'),
+    `sections: ${starvLines.filter(l => l.startsWith('##')).join(', ')}`
+  );
+  assert(
+    'starvation: overflow notice present (some open items truncated)',
+    starvContent.includes('+') && starvContent.includes('more open items'),
+    `no overflow notice found in: ${starvContent.slice(0, 200)}`
+  );
+  assert(
+    'starvation (SHOULD 4): blocked task absent from Open section',
+    (() => {
+      const openStart = starvContent.indexOf('## Open items');
+      const blockedStart = starvContent.indexOf('## Blocked / waiting');
+      if (openStart === -1 || blockedStart === -1) return false;
+      const openSection = starvContent.slice(openStart, blockedStart);
+      return !openSection.includes('Blocked on external review');
+    })(),
+    'blocked task leaked into Open section'
+  );
+  rmSync(starvDir, { recursive: true, force: true });
+}
+
+// ---- SHOULD 8: Grok hook schema in README matches proof format ----
+console.log('\n--- smoke: Grok hook schema in README ---');
+{
+  const readmePath = join(thisDir, '..', 'templates', 'hooks', 'README.md');
+  let readmeContent = '';
+  try { readmeContent = readFileSync(readmePath, 'utf8'); } catch { /* skip if missing */ }
+  assert(
+    'README: nested Grok schema present (type: command)',
+    readmeContent.includes('"type": "command"'),
+    'README missing nested hook type field'
+  );
+  // The README may reference the flat schema in prose as a "Do not use" warning.
+  // The assertion only checks that no JSON code block contains the flat format.
+  const readmeCodeBlocks = readmeContent.match(/```[\s\S]*?```/g) || [];
+  assert(
+    'README: flat event/command schema absent from code blocks',
+    !readmeCodeBlocks.some(b => b.includes('"event": "SessionStart"')),
+    'A README code block still contains the flat wrong Grok schema'
+  );
+}
+
 // ---- Summary ----
 console.log(`\nSmoke test: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);

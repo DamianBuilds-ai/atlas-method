@@ -20,6 +20,11 @@ import { homedir } from 'node:os';
 
 const DEFAULT_STATE_DIR = join(homedir(), '.atlas', 'state');
 const LINE_CAP = 80;
+// Lines reserved for sections 2-4 (blocked, baton, carried) + overflow notice.
+// Open items are capped at LINE_CAP - SECTION_RESERVE to prevent them from
+// consuming the whole budget and starving the "what to do" payload sections.
+// Budget breakdown: baton(3) + carried-min(4) + blocked-min(3) + overflow(1) + buffer(1) = 12
+const SECTION_RESERVE = 12;
 
 // Priority order for sorting open items.
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2, '': 3 };
@@ -86,6 +91,7 @@ function generateOrientation(domain, stateDir) {
   // Bucket records.
   const open = records
     .filter(r => r.status === 'open' &&
+      !hasBlockedLabel(r) &&
       (r.kind === 'task' || r.kind === 'finding' || r.kind === 'suggestion' || r.kind === 'idea'))
     .sort((a, b) => priorityOf(a) - priorityOf(b));
 
@@ -105,11 +111,16 @@ function generateOrientation(domain, stateDir) {
   // Section 1: Open items.
   if (open.length > 0) {
     lines.push('## Open items');
+    let openPushed = 0;
     for (const r of open) {
-      if (lines.length + 2 >= LINE_CAP) { overflow += open.length - (lines.length - 3 - 1); break; }
+      // Stop filling open items when the remaining budget (LINE_CAP - SECTION_RESERVE)
+      // is exhausted. SECTION_RESERVE holds space for sections 2-4 so they are never
+      // starved even when the open list is very long (e.g. 90+ items).
+      if (lines.length + 2 >= LINE_CAP - SECTION_RESERVE) { overflow = open.length - openPushed; break; }
       const priority = priorityLabel(r);
       const issueRef = r.issue ? ` (#${r.issue})` : '';
       lines.push(`- [${r.kind}${priority}] ${r.title}${issueRef}`);
+      openPushed++;
     }
     lines.push('');
   }

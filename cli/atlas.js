@@ -22,7 +22,7 @@ Commands:
       (Re)build the FTS5 index. Walks paths listed in gazetteer.repos manifest.
 
   refresh [--domain X]
-      Pull open GitHub Issues via gh issue list and reconcile into local JSONL.
+      Pull all GitHub Issues (open and closed) via gh issue list --state all and reconcile into local JSONL.
 
   orientation --domain X [--out FILE]
       Generate the 80-line orientation view from local JSONL state.
