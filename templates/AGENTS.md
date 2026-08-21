@@ -75,14 +75,23 @@ A session opens in this order:
 
 1. This file loads (plus the runner's thin shell if needed).
 2. The domain map loads (150-200 lines, read whole).
-3. A generated 80-line orientation view loads from local JSONL, refreshed
-   from `gh issue list` at SessionStart when authenticated.
-4. The newest baton for domain `{{DOMAIN}}` absorbs if one exists (40-line
-   cap). Domain match is the absorption trigger - always.
+3. **Read `sessions/current/orientation-{{DOMAIN}}.md`** - the generated
+   80-line orientation view. The SessionStart hook writes this file before
+   the session opens. Absorb it at start, every session, for this domain.
+   If the file is missing: emit a visible notice, continue without it.
+4. **Absorb the newest baton** for domain `{{DOMAIN}}` from
+   `sessions/current/` (40-line cap). Domain match is the trigger - always.
+   Classify each item: PROMOTED, DROPPED, or CARRIED.
 5. Everything else via `retrieve()` each turn as needed.
 
-Nobody hand-maintains the orientation view. A hook generates it on startup.
-Degraded path (hook fails): load map + empty baton stub. Never silence.
+Nobody hand-maintains the orientation view. The SessionStart hook generates
+it live from local JSONL (`atlas orientation --domain {{DOMAIN}}`). A
+crashed or failed hook leaves no orientation file - the session continues
+with map + empty baton stub, never silences.
+
+**File-first:** the orientation file is the primary delivery mechanism for
+all runners including Grok. Claude Code also receives the orientation via
+`additionalContext` injection, but that is a bonus - always read the file.
 
 ---
 
