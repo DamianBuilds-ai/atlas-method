@@ -144,9 +144,10 @@ Grok Build hook facts (sourced from `~/.grok/docs/user-guide/10-hooks.md`,
 
 **Practical consequence:** wiring this hook in Grok Build will not cause
 errors (fail-open, exit 0), but the date will not be injected into context.
-Grok M7 orientation requires a different injection mechanism (file drop or a
-future native event) - not this JSON pattern. That mechanism is deferred to
-M7 and must not copy the `additionalContext` approach documented above.
+The `hookSpecificOutput` / `additionalContext` pattern works in Claude Code
+only. For Grok orientation and baton stub delivery, see `session-start.sh`
+in this directory - that hook writes files the AGENTS.md constitution
+instructs the session to read at start (file-first delivery, not stdout).
 
 ---
 
@@ -271,14 +272,27 @@ orientation file and baton stub. The files are the delivery. The Grok session
 reads `sessions/current/orientation-{domain}.md` per the `AGENTS.md`
 constitution - that instruction is what closes the loop, not stdout injection.
 
-Registering in `.grok/hooks/session-start.json`:
+Registering in `~/.grok/hooks/session-start.json` (user-level) or
+`<project>/.grok/hooks/session-start.json` (project-level):
 
 ```json
 {
-  "event": "SessionStart",
-  "command": "sh /path/to/session-start.sh"
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "sh /path/to/session-start.sh" }
+        ]
+      }
+    ]
+  }
 }
 ```
+
+Do not use a flat `{"event": "SessionStart", "command": "..."}` object - that is
+not Grok's hook schema and will not register the hook. A Grok-first user with
+`[compat.claude] hooks = false` in their config relies on this file for registration;
+the Claude settings block will not run the hook for them.
 
 Do not paste the Claude `additionalContext` JSON block into a Grok snippet
 claiming it injects. It does not. The file is the contract.
