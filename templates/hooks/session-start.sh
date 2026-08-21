@@ -87,10 +87,22 @@ timestamp_now() {
 }
 
 # --------------------------------------------------------------------------
-# Step 1: Resolve domain
+# Step 1: Resolve domain + detect startup vs resume
 # --------------------------------------------------------------------------
 
 domain=$(resolve_domain)
+
+# Detect resume vs startup from the SessionStart JSON payload on stdin.
+# Claude Code and Grok Build both pass event context on stdin as JSON.
+# On a startup the source field is absent or "startup"; on a resume it is "resume".
+# We write the baton stub only on startup - a resumed session already has a stub
+# from when it started (or an earlier minute window). Reading refresh + orientation
+# still runs on resume to get current state.
+hook_event_json=$(cat /dev/stdin 2>/dev/null || true)
+is_resume=false
+if printf '%s' "$hook_event_json" | grep -q '"resume"'; then
+    is_resume=true
+fi
 
 # --------------------------------------------------------------------------
 # Step 2: Attempt atlas refresh
@@ -148,10 +160,14 @@ orientation_step() {
         state_flag="--state ${ATLAS_STATE_DIR}"
     fi
     # shellcheck disable=SC2086
-    if $atlas orientation --domain "$domain" --out "$orient_path" $state_flag >/dev/null 2>&1; then
+    $atlas orientation --domain "$domain" --out "$orient_path" $state_flag >/dev/null 2>&1 || true
+    # Notice reflects reality: check the file exists before claiming it was written.
+    # atlas orientation can exit 0 (fail-open) without writing the file (e.g. node
+    # missing, empty state). Checking -f is the only reliable signal.
+    if [ -f "$orient_path" ]; then
         notice "orientation written: ${orient_path}"
     else
-        notice "atlas orientation failed - orientation file may be missing or stale"
+        notice "atlas orientation failed - file not written: ${orient_path}"
     fi
 }
 
@@ -172,9 +188,17 @@ baton_step() {
         return
     }
 
+    # Skip stub on resume: the session already has a stub from when it started.
+    # A resumed session should absorb the same prior baton as the startup did.
+    if [ "$is_resume" = "true" ]; then
+        notice "resume detected - skipping baton stub (startup stub still active)"
+        return
+    fi
+
     # Check if any baton for this domain already exists from this session.
     # Same timestamp prefix (YYYY-MM-DD_HHMM) within a 1-minute window counts.
-    date_prefix=$(printf '%s' "$ts" | cut -c1-13)
+    # This catches rapid restart within a minute where stdin source is not set.
+    date_prefix=$(printf '%s' "$ts" | cut -c1-15)
     existing=$(ls "${baton_dir}/${date_prefix}"*"_${domain}.md" 2>/dev/null | head -1)
     if [ -n "$existing" ]; then
         notice "baton stub already exists: ${existing} - skipping"
@@ -226,18 +250,22 @@ claude_injection() {
         return
     fi
 
-    # Read orientation file content. Escape backslashes and double-quotes for JSON.
-    # The orientation file contains only printable ASCII and newlines; no other
-    # characters that require JSON escaping are expected. We convert actual newlines
-    # to \n sequences using tr + sed (POSIX safe).
+    # Read orientation file content. Escape backslashes and double-quotes for JSON,
+    # then convert newlines to \n sequences.
+    # Uses awk to process in one pass: the tr+sed chain was incorrect because
+    # tr converted newlines to backslashes and the final sed also rewrote the
+    # already-escaped backslashes from step 1, producing invalid JSON when content
+    # contained literal backslashes or double quotes (e.g. file paths, quoted titles).
     content=$(cat "$orient_path" 2>/dev/null) || return
 
-    # Escape: backslash first, then double-quote, then convert newlines to \n.
-    escaped=$(printf '%s' "$content" \
-        | sed 's/\\/\\\\/g' \
-        | sed 's/"/\\"/g' \
-        | tr '\n' '\\' \
-        | sed 's/\\/\\n/g')
+    # awk escapes in correct order: backslash first, then double-quote, then appends
+    # the literal two-char sequence \n for each input newline. POSIX awk, no jq.
+    escaped=$(printf '%s\n' "$content" \
+        | awk '{
+            gsub(/\\/, "\\\\")
+            gsub(/"/, "\\\"")
+            printf "%s\\n", $0
+        }')
 
     banner="=== ATLAS ORIENTATION: ${domain} ===\\n${escaped}\\n=== END ORIENTATION ==="
 

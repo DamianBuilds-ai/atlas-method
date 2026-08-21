@@ -250,7 +250,8 @@ placed the script (e.g. copy it from `templates/hooks/session-start.sh`).
 
 The hook emits `additionalContext` JSON containing the orientation view.
 Claude Code injects this into the session context before the first model
-response. The model sees the orientation without needing to read the file.
+response. The orientation file is always written first; the JSON injection
+is a bonus that delivers the content without a manual file read.
 
 ---
 
