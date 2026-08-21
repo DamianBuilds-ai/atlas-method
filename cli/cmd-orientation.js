@@ -216,6 +216,12 @@ function waitingOnLabel(rec) {
  * Return a single line pointing to the latest baton for the given domain.
  * Looks in sessions/current/ relative to cwd, then returns null if none found.
  * Does NOT read the baton content - orientation only carries the pointer.
+ *
+ * Excludes orientation-*.md files from the glob regardless of step ordering.
+ * Baton files are named YYYY-MM-DD_HHMM_{domain}.md; orientation files are
+ * named orientation-{domain}.md. The domain-pattern (_${domain}.md) already
+ * excludes orientation files, but this explicit filter makes the exclusion
+ * ordering-independent and visible to future readers.
  */
 function latestBatonLine(domain) {
   const batonDir = join(process.cwd(), 'sessions', 'current');
@@ -229,7 +235,9 @@ function latestBatonLine(domain) {
     : /\.md$/;
 
   // Filter and sort by filename descending (YYYY-MM-DD_HHMM prefix sorts lexicographically).
+  // orientation-*.md is explicitly excluded: it is not a baton, never a pointer target.
   const matching = entries
+    .filter(e => !e.startsWith('orientation-'))
     .filter(e => pattern.test(e))
     .sort()
     .reverse();

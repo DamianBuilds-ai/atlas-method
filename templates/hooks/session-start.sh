@@ -11,9 +11,12 @@
 #      Falls back to "unknown" with a visible notice - never silences.
 #   2. Attempts atlas refresh if gh is authenticated.
 #      Emits a visible notice on skip or failure. Never blocks (exit 0 always).
-#   3. Writes a baton STUB to sessions/current/YYYY-MM-DD_HHMM_{domain}.md.
+#   3. Runs atlas orientation --domain X --out sessions/current/orientation-{domain}.md
+#      Orientation is generated BEFORE the baton stub so that latestBatonLine()
+#      finds the PRIOR session's baton, not the empty stub this session just created.
+#   4. Writes a baton STUB to sessions/current/YYYY-MM-DD_HHMM_{domain}.md.
 #      40-line cap. Skipped if a baton for this session already exists.
-#   4. Runs atlas orientation --domain X --out sessions/current/orientation-{domain}.md
+#      Written after orientation so the stub does not shadow the prior baton pointer.
 #   5. CLAUDE ONLY: emits additionalContext JSON carrying the orientation content.
 #      This bonus injection works in Claude Code but is IGNORED by Grok Build
 #      on SessionStart (Grok's hook stdout is ignored for this event).
@@ -122,7 +125,40 @@ refresh_step() {
 ( refresh_step ) || notice "refresh step encountered an error - continuing"
 
 # --------------------------------------------------------------------------
-# Step 3: Write baton stub (skip if this session already has one)
+# Step 3: Generate orientation view (before writing the baton stub)
+#
+# Orientation is generated FIRST so that latestBatonLine() in cmd-orientation.js
+# finds the prior session's baton file, not the empty stub this session is about
+# to create. Writing the stub first caused the orientation to point at the new
+# empty stub, making the prior baton invisible. s.9 step 4: "Latest baton loads
+# if one exists - domain match - opening domain X absorbs X's newest PRIOR baton."
+# --------------------------------------------------------------------------
+
+orientation_step() {
+    atlas=$(atlas_cmd)
+    if [ -z "$atlas" ]; then
+        notice "atlas not found - skipping orientation generation"
+        return
+    fi
+    orient_dir="sessions/current"
+    orient_path="${orient_dir}/orientation-${domain}.md"
+    mkdir -p "$orient_dir" 2>/dev/null || true
+    state_flag=""
+    if [ -n "${ATLAS_STATE_DIR:-}" ]; then
+        state_flag="--state ${ATLAS_STATE_DIR}"
+    fi
+    # shellcheck disable=SC2086
+    if $atlas orientation --domain "$domain" --out "$orient_path" $state_flag >/dev/null 2>&1; then
+        notice "orientation written: ${orient_path}"
+    else
+        notice "atlas orientation failed - orientation file may be missing or stale"
+    fi
+}
+
+( orientation_step ) || notice "orientation step encountered an error - continuing"
+
+# --------------------------------------------------------------------------
+# Step 4: Write baton stub (skip if this session already has one)
 # --------------------------------------------------------------------------
 
 baton_step() {
@@ -174,31 +210,6 @@ write_minimal_stub() {
 }
 
 ( baton_step ) || notice "baton step encountered an error - continuing"
-
-# --------------------------------------------------------------------------
-# Step 4: Generate orientation view
-# --------------------------------------------------------------------------
-
-orientation_step() {
-    atlas=$(atlas_cmd)
-    if [ -z "$atlas" ]; then
-        notice "atlas not found - skipping orientation generation"
-        return
-    fi
-    orient_dir="sessions/current"
-    orient_path="${orient_dir}/orientation-${domain}.md"
-    mkdir -p "$orient_dir" 2>/dev/null || true
-    state_flag=""
-    if [ -n "${ATLAS_STATE_DIR:-}" ]; then
-        state_flag="--state ${ATLAS_STATE_DIR}"
-    fi
-    # shellcheck disable=SC2086
-    $atlas orientation --domain "$domain" --out "$orient_path" $state_flag >/dev/null 2>&1 || \
-        notice "atlas orientation failed - orientation file may be missing or stale"
-    notice "orientation written: ${orient_path}"
-}
-
-( orientation_step ) || notice "orientation step encountered an error - continuing"
 
 # --------------------------------------------------------------------------
 # Step 5: Claude additionalContext injection (Claude Code only)
