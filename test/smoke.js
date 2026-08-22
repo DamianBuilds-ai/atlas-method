@@ -777,6 +777,282 @@ console.log('\n--- smoke: adapters generate - hand-edit detectable ---');
   rmSync(editTmp, { recursive: true, force: true });
 }
 
+// ============================================================
+// INSTALLER SMOKE TESTS (atlas init + atlas update)
+// ============================================================
+
+const { cmdInit } = await import(join(cliDir, 'cmd-init.js'));
+const { cmdUpdate } = await import(join(cliDir, 'cmd-update.js'));
+const { execSync: smokeExec } = await import('node:child_process');
+
+// Gearbox ceremony markers that must NEVER appear in the scaffolded AGENTS.md
+const GEARBOX_MARKERS = [
+  'On starting a shift',
+  'L1 strict tier',
+  'gearbox-update',
+  'npx gearbox-agents',
+];
+
+// ---- init: scaffold into a fresh fixture dir - all payload files present ----
+console.log('\n--- smoke: atlas init - scaffold into fresh dir ---');
+{
+  const initTmp = mkdtempSync(join(tmpdir(), 'atlas-init-smoke-'));
+
+  // Suppress output from init
+  const origLog = console.log;
+  console.log = () => {};
+  try {
+    await cmdInit(['--profile', 'github', '--dir', initTmp]);
+  } finally {
+    console.log = origLog;
+  }
+
+  // Assert required payload files exist
+  const requiredFiles = [
+    'AGENTS.md',
+    'CLAUDE.md',
+    'GEMINI.md',
+    '.gemini/settings.json',
+    '.atlas/hooks/datetime.sh',
+    '.atlas/hooks/session-start.sh',
+    '.atlas/method-manifest.json',
+    'gazetteer.repos',
+    'sessions/current/.gitkeep',
+  ];
+
+  for (const f of requiredFiles) {
+    assert(`init: ${f} exists in scaffold`, existsSync(join(initTmp, f)), `${f} missing from scaffold`);
+  }
+
+  // Assert M1 invariant: scaffolded AGENTS.md must not contain gearbox ceremony markers
+  const scaffoldedAgents = readFileSync(join(initTmp, 'AGENTS.md'), 'utf8');
+  for (const marker of GEARBOX_MARKERS) {
+    assert(
+      `init: scaffolded AGENTS.md absent gearbox marker "${marker}"`,
+      !scaffoldedAgents.includes(marker),
+      `gearbox ceremony marker found in scaffolded AGENTS.md: "${marker}"`
+    );
+  }
+
+  // Assert CLAUDE.md is exactly one line: @AGENTS.md
+  const claudeMd = readFileSync(join(initTmp, 'CLAUDE.md'), 'utf8');
+  assert(
+    'init: CLAUDE.md is one-line @AGENTS.md shell',
+    claudeMd.trim() === '@AGENTS.md',
+    `CLAUDE.md content: "${claudeMd.trim()}"`
+  );
+
+  // Assert .gemini/settings.json is valid JSON pointing at AGENTS.md
+  const geminiSettings = JSON.parse(readFileSync(join(initTmp, '.gemini/settings.json'), 'utf8'));
+  assert(
+    'init: .gemini/settings.json points at AGENTS.md',
+    geminiSettings?.context?.fileName === 'AGENTS.md',
+    `context.fileName is "${geminiSettings?.context?.fileName}"`
+  );
+
+  // Assert manifest was written and is parseable
+  const manifest = JSON.parse(readFileSync(join(initTmp, '.atlas/method-manifest.json'), 'utf8'));
+  assert(
+    'init: manifest has schemaVersion 1',
+    manifest.schemaVersion === 1,
+    `schemaVersion: ${manifest.schemaVersion}`
+  );
+  assert(
+    'init: manifest has methodVersion',
+    typeof manifest.methodVersion === 'string' && manifest.methodVersion.length > 0,
+    `methodVersion: ${manifest.methodVersion}`
+  );
+  assert(
+    'init: manifest has files map',
+    manifest.files && typeof manifest.files === 'object',
+    'manifest.files missing or not an object'
+  );
+
+  // Assert generated adapter overlays exist (M1: from templates/ not root AGENTS.md)
+  const claudeScout = join(initTmp, '.claude', 'agents', 'scout.md');
+  assert(
+    'init: .claude/agents/scout.md generated (adapter overlay)',
+    existsSync(claudeScout),
+    'claude scout adapter missing from scaffold'
+  );
+  // Assert adapter has do-not-hand-edit header (proves it came from generator, not hand-copy)
+  const scoutContent = readFileSync(claudeScout, 'utf8');
+  assert(
+    'init: adapter has do-not-hand-edit header (M1 - came from generator)',
+    scoutContent.includes('do not hand-edit'),
+    'do-not-hand-edit header missing from adapter'
+  );
+
+  rmSync(initTmp, { recursive: true, force: true });
+}
+
+// ---- init: re-init refuses to clobber (without --force) ----
+console.log('\n--- smoke: atlas init - re-init refuses to clobber ---');
+{
+  const clobberTmp = mkdtempSync(join(tmpdir(), 'atlas-clobber-smoke-'));
+
+  // Write a sentinel value into AGENTS.md before init
+  mkdirSync(clobberTmp, { recursive: true });
+  writeFileSync(join(clobberTmp, 'AGENTS.md'), 'SENTINEL: this must not be overwritten\n');
+
+  const origLog = console.log;
+  const initLines = [];
+  console.log = (...a) => initLines.push(a.join(' '));
+  try {
+    await cmdInit(['--dir', clobberTmp]);
+  } finally {
+    console.log = origLog;
+  }
+
+  // AGENTS.md must still have the sentinel (not overwritten)
+  const agentsAfter = readFileSync(join(clobberTmp, 'AGENTS.md'), 'utf8');
+  assert(
+    'init: re-init did not overwrite existing AGENTS.md (no --force)',
+    agentsAfter.includes('SENTINEL'),
+    `AGENTS.md was overwritten; got: "${agentsAfter.slice(0, 80)}"`
+  );
+
+  // Output must mention the skip
+  const outputJoined = initLines.join('\n');
+  assert(
+    'init: re-init reports skipped files',
+    outputJoined.includes('Skipped') || outputJoined.includes('skipped') || outputJoined.includes('~'),
+    `no skip notice in output: "${outputJoined.slice(0, 300)}"`
+  );
+
+  rmSync(clobberTmp, { recursive: true, force: true });
+}
+
+// ---- update: hand-edited file reported as locally-modified, not overwritten ----
+console.log('\n--- smoke: atlas update - hand-edited file kept as locally-modified ---');
+{
+  const updateTmp = mkdtempSync(join(tmpdir(), 'atlas-update-smoke-'));
+
+  // Init first (no git - update without git still writes the report)
+  const origLog = console.log;
+  console.log = () => {};
+  try {
+    await cmdInit(['--dir', updateTmp]);
+  } finally {
+    console.log = origLog;
+  }
+
+  // Hand-edit CLAUDE.md (one of the tracked files)
+  writeFileSync(join(updateTmp, 'CLAUDE.md'), '@AGENTS.md\n# hand-edited line\n');
+
+  // Now run update - should report CLAUDE.md as LOCALLY-MODIFIED, not write over it
+  const updateLines = [];
+  console.log = (...a) => updateLines.push(a.join(' '));
+  const origWarn = console.warn;
+  console.warn = () => {};
+  try {
+    await cmdUpdate(['--dir', updateTmp]);
+  } finally {
+    console.log = origLog;
+    console.warn = origWarn;
+  }
+
+  // UPDATE-REPORT.md must exist
+  const reportPath = join(updateTmp, 'UPDATE-REPORT.md');
+  assert(
+    'update: UPDATE-REPORT.md written',
+    existsSync(reportPath),
+    'UPDATE-REPORT.md missing after update'
+  );
+
+  const reportContent = readFileSync(reportPath, 'utf8');
+  assert(
+    'update: CLAUDE.md listed as LOCALLY-MODIFIED in report',
+    reportContent.includes('LOCALLY-MODIFIED') && reportContent.includes('CLAUDE.md'),
+    `LOCALLY-MODIFIED not found in report for CLAUDE.md: "${reportContent.slice(0, 400)}"`
+  );
+
+  // CLAUDE.md must still have the hand-edit (not overwritten)
+  const claudeAfter = readFileSync(join(updateTmp, 'CLAUDE.md'), 'utf8');
+  assert(
+    'update: hand-edited CLAUDE.md not overwritten by update',
+    claudeAfter.includes('hand-edited line'),
+    `CLAUDE.md hand-edit was lost; got: "${claudeAfter}"`
+  );
+
+  rmSync(updateTmp, { recursive: true, force: true });
+}
+
+// ---- update: upstream-changed file produces a branch entry and is listed as updated ----
+console.log('\n--- smoke: atlas update - upstream-changed file listed as updated ---');
+{
+  const upstreamTmp = mkdtempSync(join(tmpdir(), 'atlas-upstream-smoke-'));
+
+  // Init
+  const origLog = console.log;
+  const origWarn = console.warn;
+  console.log = () => {};
+  console.warn = () => {};
+  try {
+    await cmdInit(['--dir', upstreamTmp]);
+  } finally {
+    console.log = origLog;
+    console.warn = origWarn;
+  }
+
+  // Simulate "upstream changed GEMINI.md" by:
+  //   1. Replacing the target's GEMINI.md with a custom version (hash B)
+  //   2. Updating the installed manifest to record hash B for templates/GEMINI.md
+  // Now when update runs:
+  //   pkgCurrentHash = A (real package hash from payload/MANIFEST.json)
+  //   pkgInstalledHash = B (what the manifest says was installed)
+  //   targetHash = B (target file was set to our custom version)
+  //   => pkgChanged=true, targetChanged=false => UPSTREAM-CHANGED
+  const { createHash: smokeHash } = await import('node:crypto');
+  const customGeminiContent = '@AGENTS.md\n# simulated-older-version\n';
+  writeFileSync(join(upstreamTmp, 'GEMINI.md'), customGeminiContent);
+  const customHash = smokeHash('sha256').update(customGeminiContent).digest('hex');
+
+  const manifestPath = join(upstreamTmp, '.atlas', 'method-manifest.json');
+  const mf = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  mf.files['templates/GEMINI.md'] = customHash; // record custom version as what was installed
+  writeFileSync(manifestPath, JSON.stringify(mf, null, 2) + '\n');
+
+  // Run update (no git repo in upstreamTmp, so no branch - report is still written)
+  console.log = () => {};
+  console.warn = () => {};
+  try {
+    await cmdUpdate(['--dir', upstreamTmp]);
+  } finally {
+    console.log = origLog;
+    console.warn = origWarn;
+  }
+
+  // UPDATE-REPORT.md must mention UPSTREAM-CHANGED
+  const reportPath = join(upstreamTmp, 'UPDATE-REPORT.md');
+  assert(
+    'update: UPDATE-REPORT.md present after upstream-changed run',
+    existsSync(reportPath),
+    'UPDATE-REPORT.md missing'
+  );
+
+  const reportContent = readFileSync(reportPath, 'utf8');
+  assert(
+    'update: UPSTREAM-CHANGED appears in report for simulated-upstream file',
+    reportContent.includes('UPSTREAM-CHANGED'),
+    `UPSTREAM-CHANGED not in report: "${reportContent.slice(0, 500)}"`
+  );
+
+  // The target GEMINI.md should now be the CURRENT package version (applied)
+  const geminiAfter = readFileSync(join(upstreamTmp, 'GEMINI.md'), 'utf8');
+  assert(
+    'update: GEMINI.md applied to current package version (simulated-older-version gone)',
+    !geminiAfter.includes('simulated-older-version'),
+    `old version still present in GEMINI.md: "${geminiAfter}"`
+  );
+
+  rmSync(upstreamTmp, { recursive: true, force: true });
+}
+
+// ============================================================
+// END INSTALLER SMOKE TESTS
+// ============================================================
+
 // ---- Summary ----
 console.log(`\nSmoke test: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);

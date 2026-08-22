@@ -40,7 +40,7 @@ yours locally.
 |------|--------------|-------------|
 | **Claude plugin** | Claude Code (`claude` CLI), then `gh` auth with `repo` + `issues` scopes | `claude plugin marketplace add DamianBuilds-ai/atlas-method` then `claude plugin install atlas-method@damianbuilds` then `/hooks-trust` in the project |
 | **Grok plugin** | Grok Build (curl installer + `grok login`), then `gh` auth | `grok plugin marketplace add DamianBuilds-ai/atlas-method` then `grok plugin install atlas-method-grok --trust` |
-| **npx** | Node >= 22, git | `npx atlas-method init` (planned universal door - coming with the installer workstream; not yet shipped) |
+| **npx** | Node >= 22, git | `npx github:DamianBuilds-ai/atlas-method init` |
 | **GitHub profile only** | `gh` auth with `repo` + `issues` scopes; add `project` scope only if auto-graduation is on | Clone this repo, copy `templates/` into your personal OS repo, wire hooks manually |
 | **Purely local** | git + a shell harness of your choice. No `gh` required | Clone, copy `templates/`, wire hooks without any remote integration |
 
@@ -61,10 +61,15 @@ yours locally.
 - After install: the `--trust` flag on `grok plugin install` grants hook trust
   in one step; no separate `/hooks-trust` command is needed
 
-**npx door** (planned - not yet shipped)
-- `npx atlas-method init` is the planned universal door, coming with the installer workstream.
-- The working doors today are the plugin dirs (Claude plugin, Grok plugin) and manual clone.
-- Do not rely on npx for a current installation.
+**npx door**
+- `npx github:DamianBuilds-ai/atlas-method init` is the live universal door as of v1.1.4.
+- Requires Node >= 22 and git. No global install needed.
+- For purely-local mode (no GitHub integration): `npx github:DamianBuilds-ai/atlas-method init --profile local`
+- To scaffold into a specific directory: `npx github:DamianBuilds-ai/atlas-method init --dir /path/to/repo`
+- To update an existing install: `npx github:DamianBuilds-ai/atlas-method update --dir /path/to/repo`
+- npm registry publish (`npx atlas-method init` without the github: prefix) is OWNER-ONLY future work.
+  Name `atlas-method` is available on npm (verified 2026-08-23). Scoped fallback `@damianbuilds/atlas-method`
+  also available. Publish pending Damian's go-signal; the github: prefix works today.
 
 **GitHub profile door**
 - `gh auth login` (repo + issues scopes are the minimum)

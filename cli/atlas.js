@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// atlas CLI - M8 + M3 + M4 implementation
+// atlas CLI - M8 + M3 + M4 + installer implementation
 // Node >=22.5.0 required: uses node:sqlite (builtin FTS5, experimental on 22.x).
 // Invoke via atlas-launch.sh (the bin entry) which sets --experimental-sqlite.
 // Direct invocation: node --experimental-sqlite cli/atlas.js <command> [args]
@@ -9,6 +9,8 @@ import { cmdIndex } from './cmd-index.js';
 import { cmdRefresh } from './cmd-refresh.js';
 import { cmdOrientation } from './cmd-orientation.js';
 import { cmdAdapters } from './cmd-adapters.js';
+import { cmdInit } from './cmd-init.js';
+import { cmdUpdate } from './cmd-update.js';
 
 const [,, cmd, ...rest] = process.argv;
 
@@ -16,6 +18,19 @@ const HELP = `
 atlas - Atlas Method local search + state CLI
 
 Commands:
+  init [--profile github|local] [--dir TARGET] [--force]
+      Scaffold a target repo with the Atlas Method payload:
+      AGENTS.md (personalized), CLAUDE.md + GEMINI.md shells, .gemini/settings.json,
+      hooks (datetime + session-start), generated adapters, gazetteer.repos,
+      sessions/ skeleton. Writes .atlas/method-manifest.json (version stamp).
+      Refuses to clobber existing files unless --force is set.
+
+  update [--dir TARGET]
+      Compare target's installed Atlas Method against the current package.
+      Reports version delta + per-file drift. Writes changes to a backfill
+      branch (atlas-method-update-{version}) + UPDATE-REPORT.md. Never
+      silently rewrites. Constitution changes always flagged loudest.
+
   search "<query>" [--domain X] [--top N]
       FTS5 full-text search over indexed maps, leaves, ADRs, batons, JSONL state.
 
@@ -48,6 +63,8 @@ Binding: node:sqlite (builtin) - no native addon, no npm install needed.
 `.trim();
 
 switch (cmd) {
+  case 'init':   await cmdInit(rest); break;
+  case 'update': await cmdUpdate(rest); break;
   case 'search': await cmdSearch(rest); break;
   case 'index':  await cmdIndex(rest);  break;
   case 'refresh': await cmdRefresh(rest); break;
