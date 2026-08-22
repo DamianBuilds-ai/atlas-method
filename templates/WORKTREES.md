@@ -51,9 +51,12 @@ without cleanup leaves orphaned directories. Run `git worktree list` to audit.
 
 ## Claude Code note
 
-Claude Code supports `isolation: worktree` in agent frontmatter (generated adapter
-files carry this via the jobs.json source). The parent agent orchestrates creation;
-child agents receive a worktree path in their context and edit only within it.
+Claude Code worktree isolation is a dispatch-time concern, not an agent frontmatter
+field. When the parent spawns a child agent, it passes `isolation: "worktree"` as
+a parameter to the Agent tool call (or the harness's worktree option). The agent
+definition file (`.claude/agents/{tier}.md`) does not carry an `isolation:` field;
+that field is tooling-side at spawn time. The child receives a worktree path in its
+context and edits only within it. The parent applies or discards the worktree at wrap.
 
 ---
 

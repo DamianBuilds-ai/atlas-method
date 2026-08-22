@@ -625,22 +625,23 @@ console.log('\n--- smoke: adapters generate - runs and emits expected file set -
     `missing no-spawn rule in: ${scoutContent.slice(0, 300)}`
   );
 
-  // Assert Grok stub has TODO markers and model-omitted note.
+  // Assert Grok adapter has real YAML frontmatter schema and confirmed content.
+  // Format confirmed from ~/.grok/docs/user-guide/16-subagents.md.
   const grokContent = readFileSync(grokRetrieve, 'utf8');
   assert(
-    'adapters: grok stub has TODO schema warning',
-    grokContent.includes('TODO') && grokContent.includes('schema'),
-    `missing TODO/schema in grok stub: ${grokContent.slice(0, 200)}`
+    'adapters: grok adapter has YAML frontmatter name field',
+    grokContent.includes('name: retrieve'),
+    `YAML frontmatter name field missing in grok adapter: ${grokContent.slice(0, 200)}`
   );
   assert(
-    'adapters: grok stub states model OMITTED',
+    'adapters: grok adapter states model OMITTED',
     grokContent.includes('OMITTED'),
     `model-omitted note missing: ${grokContent.slice(0, 200)}`
   );
   assert(
-    'adapters: grok stub states no child spawning',
+    'adapters: grok adapter states no child spawning',
     grokContent.includes('No child spawning'),
-    `no-child-spawn missing from grok stub: ${grokContent.slice(0, 300)}`
+    `no-child-spawn missing from grok adapter: ${grokContent.slice(0, 300)}`
   );
 
   // Assert Grok apply stub has worktree isolation.
