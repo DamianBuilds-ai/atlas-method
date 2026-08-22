@@ -1,48 +1,30 @@
-<!-- generated from adapters/jobs.json - do not hand-edit -->
-<!-- TODO: verify .grok/agents/ file schema before deploying -->
-<!-- This stub uses Markdown + comment blocks. Actual Grok Build persona -->
-<!-- files may use YAML, TOML, or JSON frontmatter. Verify the format   -->
-<!-- against ~/.grok/docs/ or grok build --help agents before wiring.  -->
-
-# Grok adapter - apply job
-
-## Job mapping
+---
+# generated from adapters/jobs.json - do not hand-edit
+name: apply
+description: >-
+  One deterministic edit. No inference allowed.
+mcpInheritance: all
+---
 
 **Job:** apply
 **Contract:** One deterministic edit. No inference allowed.
-**Isolation:** worktree (writer job - flag isolation: worktree in spawn)
+**Isolation:** Worktree (writer job)
 
-## Persona fields
+## Spawn parameters (confirmed - 16-subagents.md)
 
-<!-- TODO: verify field names below against Grok Build docs -->
+- `subagent_type: apply` (matches `name` above)
+- `capability_mode: read-write` (confirmed: coarse tool filter; values: read-only | read-write | execute | all)
+- `isolation: worktree` (isolated git worktree; parent applies or discards at wrap)
+- **model: OMITTED** (confirmed: subagents inherit parent model; per-type overrides via config.toml [subagents.models])
 
-- **persona / name:** general-purpose
-  - TODO: confirm the field key is "persona" or "name" in the Grok config format
-- **effort:** low
-  - TODO: confirm accepted effort values (low / medium / high / xhigh)
-- **mode:** read-write
-  - TODO: confirm read-only vs read-write is enforced via a "mode" field or equivalent
-- **model:** OMITTED - inherit from parent
-  - Spec section 13/19 lock: omit model on children, vary effort only.
-  - Skill frontmatter model/effort on Grok is accepted and ignored (s.19).
-  - Pins live on roles/personas/spawn, not here.
-- **isolation:** worktree
-  - TODO: confirm Grok Build spawn flag for worktree isolation
-  - Spec s.13: writers (apply, implement) run in worktrees.
+<!-- TODO(effort): reasoning_effort is a persona TOML field, not agent frontmatter.
+     Recommended effort for this job: low.
+     To enforce it: config.toml [subagents.personas.apply] reasoning_effort = "low" -->
 
-## Rules (encode in persona prompt or spawn brief)
+## Rules
 
-- **No child spawning.** Grok depth is 1. This job runs as a direct child; it does not spawn further children.
-- **Sequential processing.** One item at a time.
+- **No child spawning.** Grok depth is 1; subagents cannot spawn further children.
+- **Sequential processing.** One item at a time. Complete each before moving on.
 - **Job contract:** One deterministic edit. No inference allowed.
-
-## TODO: schema verification checklist
-
-Before deploying this stub as a real Grok persona file:
-- [ ] Confirm .grok/agents/ is the correct directory for persona definitions
-- [ ] Confirm the file format: YAML frontmatter / TOML / JSON / Markdown
-- [ ] Confirm persona field key name
-- [ ] Confirm effort field key name and value set
-- [ ] Confirm model omission is correct (should inherit parent by default)
-- [ ] Confirm worktree isolation flag if applicable
-- [ ] Run: grok build --help agents (or equivalent) to verify
+- **Worktree only.** All edits happen inside the isolated worktree branch.
+  Never write to the parent workspace directly. The parent applies or discards the worktree at wrap.

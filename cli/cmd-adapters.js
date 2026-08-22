@@ -102,77 +102,66 @@ function generateClaude(jobs, outBase) {
 }
 
 // ---- Grok adapter generator ----
-// Grok Build uses .grok/agents/ for persona definitions. The exact file
-// format (YAML, TOML, JSON, or Markdown with frontmatter) is NOT verified
-// from Grok Build's public documentation as of 2026-08-22. These stubs
-// carry all known content plus explicit TODO markers for each unverified
-// field or schema question.
+// Grok Build agent files live in .grok/agents/ as Markdown files with YAML
+// frontmatter. Schema confirmed from ~/.grok/docs/user-guide/16-subagents.md:
 //
-// Known-confirmed content per spec section 13 + 19:
-//   - model field is OMITTED (inherit from parent - spec s.13/19)
-//   - effort field is the primary tuning lever (low/medium/high/xhigh)
-//   - persona names: explore, general-purpose, read-only, researcher, write
-//   - writer jobs (apply, implement) get isolation: worktree
-//   - No child spawning (Grok depth is 1)
+//   Confirmed frontmatter fields: name, description, mcpInheritance
+//   Confirmed spawn_subagent parameters: subagent_type, capability_mode,
+//     isolation (none | worktree), background, prompt, description, cwd
+//   Model omission: confirmed - subagents inherit parent model by default;
+//     per-type overrides go in config.toml [subagents.models]
+//   No child spawning: confirmed - depth limit is 1 (Depth Limits section)
+//   Worktree isolation: confirmed via isolation: worktree spawn parameter
+//
+// Narrow remaining ambiguities (keep TODO only for these):
+//   - reasoning_effort: confirmed as PERSONA TOML field, not agent frontmatter.
+//     Set in config.toml [subagents.personas.{name}] if effort control needed.
+//   - tools: field confirmed in agent frontmatter but full tool name list not
+//     enumerated in 16-subagents.md; omitted here to allow full toolset.
 
 function grokAdapterBody(jobName, job) {
   const grok = job.grok;
   const isWorktree = job.isolation === 'worktree';
-  const effortLine = grok.effort_alt
+  const effortNote = grok.effort_alt
     ? `${grok.effort} or ${grok.effort_alt} (choose per task scope)`
     : grok.effort;
 
   return [
-    `<!-- generated from adapters/jobs.json - do not hand-edit -->`,
-    `<!-- TODO: verify .grok/agents/ file schema before deploying -->`,
-    `<!-- This stub uses Markdown + comment blocks. Actual Grok Build persona -->`,
-    `<!-- files may use YAML, TOML, or JSON frontmatter. Verify the format   -->`,
-    `<!-- against ~/.grok/docs/ or grok build --help agents before wiring.  -->`,
-    ``,
-    `# Grok adapter - ${jobName} job`,
-    ``,
-    `## Job mapping`,
+    `---`,
+    `# generated from adapters/jobs.json - do not hand-edit`,
+    `name: ${jobName}`,
+    `description: >-`,
+    `  ${job.contract}`,
+    `mcpInheritance: all`,
+    `---`,
     ``,
     `**Job:** ${jobName}`,
     `**Contract:** ${job.contract}`,
-    `**Isolation:** ${isWorktree ? 'worktree (writer job - flag isolation: worktree in spawn)' : 'shared workspace (reader job)'}`,
+    `**Isolation:** ${isWorktree ? 'Worktree (writer job)' : 'Shared workspace (reader job)'}`,
     ``,
-    `## Persona fields`,
+    `## Spawn parameters (confirmed - 16-subagents.md)`,
     ``,
-    `<!-- TODO: verify field names below against Grok Build docs -->`,
+    `- \`subagent_type: ${jobName}\` (matches \`name\` above)`,
+    `- \`capability_mode: ${grok.mode}\` (confirmed: coarse tool filter; values: read-only | read-write | execute | all)`,
+    `- \`isolation: ${isWorktree ? 'worktree' : 'none'}\` (${isWorktree ? 'isolated git worktree; parent applies or discards at wrap' : 'shared workspace - reader job, no worktree needed'})`,
+    `- **model: OMITTED** (confirmed: subagents inherit parent model; per-type overrides via config.toml [subagents.models])`,
     ``,
-    `- **persona / name:** ${grok.persona}`,
-    `  - TODO: confirm the field key is "persona" or "name" in the Grok config format`,
-    `- **effort:** ${effortLine}`,
-    `  - TODO: confirm accepted effort values (low / medium / high / xhigh)`,
-    `- **mode:** ${grok.mode}`,
-    `  - TODO: confirm read-only vs read-write is enforced via a "mode" field or equivalent`,
-    `- **model:** OMITTED - inherit from parent`,
-    `  - Spec section 13/19 lock: omit model on children, vary effort only.`,
-    `  - Skill frontmatter model/effort on Grok is accepted and ignored (s.19).`,
-    `  - Pins live on roles/personas/spawn, not here.`,
-    ...(isWorktree ? [
-      `- **isolation:** worktree`,
-      `  - TODO: confirm Grok Build spawn flag for worktree isolation`,
-      `  - Spec s.13: writers (apply, implement) run in worktrees.`,
-    ] : []),
+    `<!-- TODO(effort): reasoning_effort is a persona TOML field, not agent frontmatter.`,
+    `     Recommended effort for this job: ${effortNote}.`,
+    `     To enforce it: config.toml [subagents.personas.${jobName}] reasoning_effort = "${grok.effort}" -->`,
     ``,
-    `## Rules (encode in persona prompt or spawn brief)`,
+    `## Rules`,
     ``,
-    `- **No child spawning.** Grok depth is 1. This job runs as a direct child; it does not spawn further children.`,
-    `- **Sequential processing.** One item at a time.`,
+    `- **No child spawning.** Grok depth is 1; subagents cannot spawn further children.`,
+    `- **Sequential processing.** One item at a time. Complete each before moving on.`,
     `- **Job contract:** ${job.contract}`,
-    ``,
-    `## TODO: schema verification checklist`,
-    ``,
-    `Before deploying this stub as a real Grok persona file:`,
-    `- [ ] Confirm .grok/agents/ is the correct directory for persona definitions`,
-    `- [ ] Confirm the file format: YAML frontmatter / TOML / JSON / Markdown`,
-    `- [ ] Confirm persona field key name`,
-    `- [ ] Confirm effort field key name and value set`,
-    `- [ ] Confirm model omission is correct (should inherit parent by default)`,
-    `- [ ] Confirm worktree isolation flag if applicable`,
-    `- [ ] Run: grok build --help agents (or equivalent) to verify`,
+    ...(isWorktree ? [
+      `- **Worktree only.** All edits happen inside the isolated worktree branch.`,
+      `  Never write to the parent workspace directly. The parent applies or discards the worktree at wrap.`,
+    ] : [
+      `- **Read-only or prose only.** This job does not write to the repo.`,
+      `  Return findings, excerpts, or drafted prose as output.`,
+    ]),
     ``,
   ].join('\n');
 }
@@ -316,7 +305,7 @@ export async function cmdAdapters(args) {
     const out = join(templatesDir, '.grok', 'agents');
     const files = generateGrok(jobs, out);
     allGenerated.push(...files);
-    console.log(`Grok: generated ${files.length} stub file(s) in templates/.grok/agents/ (format TODOs marked)`);
+    console.log(`Grok: generated ${files.length} file(s) in templates/.grok/agents/ (real schema from 16-subagents.md)`);
     for (const f of files) {
       console.log(`  ${f.jobName} -> ${f.jobName}.md (persona: ${f.persona})`);
     }
