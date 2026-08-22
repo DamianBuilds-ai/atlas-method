@@ -22,8 +22,9 @@
 #
 # Exit codes:
 #   0 - all checks passed
-#   1 - one or more private repos reported non-private (FAIL)
+#   1 - one or more private repos reported non-private (FAIL - confirmed leak)
 #   2 - manifest not found or unusable
+#   3 - one or more gh API calls failed (DEGRADED - result is inconclusive, no PASS)
 
 set -eu
 
@@ -79,6 +80,7 @@ fi
 
 # ---- process manifest ----
 FAIL=0
+DEGRADED=0
 CHECKED=0
 
 while IFS= read -r line; do
@@ -138,7 +140,8 @@ while IFS= read -r line; do
             printf 'private OK\n'
             ;;
         api-error)
-            printf '\n  WARNING: could not query %s (API error or access denied)\n' "$owner_repo" >&2
+            printf '\n  DEGRADED: could not query %s (API error or access denied) - result inconclusive\n' "$owner_repo" >&2
+            DEGRADED=1
             ;;
         *)
             printf '\n'
@@ -166,6 +169,11 @@ printf '\n'
 if [ "$FAIL" = "1" ]; then
     printf 'Watchdog FAILED: private repo(s) with leaked visibility - see named repos above.\n' >&2
     exit 1
+fi
+
+if [ "$DEGRADED" = "1" ]; then
+    printf 'Watchdog DEGRADED: one or more API calls failed - visibility inconclusive. No PASS claimed.\n' >&2
+    exit 3
 fi
 
 printf 'Watchdog PASSED: %d remote(s) checked, all confirmed private.\n' "$CHECKED"

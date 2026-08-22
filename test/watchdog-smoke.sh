@@ -122,6 +122,51 @@ check \
     "$MANIFEST_PRIVATE_OK" \
     "private"
 
+# Assertion 5 (api-error fixture): mock-gh fails (exits non-zero) -> DEGRADED exit 3,
+# no PASS claimed, no FAIL exit 1 (not a false leak alarm).
+# The mock gh returns a non-zero exit to simulate an API error.
+# The 'check' helper uses the mock to return "api-error" (via stdout) but the watchdog
+# uses 'gh api ... || printf api-error'. We need the mock to both print "api-error"
+# AND exit non-zero so the watchdog captures "api-error" from the fallback printf.
+# Simplest: make the mock gh script always print "api-error" and exit 1.
+MOCK_BIN_ERR="$TMPDIR_LOCAL/mock-bin-apierr"
+mkdir -p "$MOCK_BIN_ERR"
+# Exit 1 with no stdout so the watchdog's fallback `|| printf 'api-error'` fires cleanly.
+# Printing "api-error" from the mock AND having the fallback also run produces
+# "api-errorapi-error" which does not match the case branch in the watchdog.
+printf '#!/bin/sh\nexit 1\n' > "$MOCK_BIN_ERR/gh"
+chmod +x "$MOCK_BIN_ERR/gh"
+
+actual_output_err=$(PATH="$MOCK_BIN_ERR:$PATH" sh "$WATCHDOG" --manifest "$MANIFEST_PRIVATE_OK" --dry-run 2>&1 || true)
+actual_exit_err=0
+PATH="$MOCK_BIN_ERR:$PATH" sh "$WATCHDOG" --manifest "$MANIFEST_PRIVATE_OK" --dry-run >/dev/null 2>&1 || actual_exit_err=$?
+
+exit_ok_err=1
+[ "$actual_exit_err" = "3" ] || exit_ok_err=0
+
+# "Watchdog PASSED" must NOT appear; "No PASS claimed" contains the word but is not a pass claim.
+nopass_ok=1
+printf '%s' "$actual_output_err" | grep -qi "Watchdog PASSED" && nopass_ok=0 || true
+
+degraded_ok=1
+printf '%s' "$actual_output_err" | grep -qi "DEGRADED" || degraded_ok=0
+
+notleak_ok=1
+[ "$actual_exit_err" = "1" ] && notleak_ok=0 || true
+
+if [ "$exit_ok_err" = "1" ] && [ "$nopass_ok" = "1" ] && [ "$degraded_ok" = "1" ] && [ "$notleak_ok" = "1" ]; then
+    printf 'PASS: api-error -> DEGRADED (exit 3), no PASS claimed, no false leak (exit 1)\n'
+    PASS=$((PASS + 1))
+else
+    printf 'FAIL: api-error fixture\n' >&2
+    printf '  expected exit=3 got exit=%s\n' "$actual_exit_err" >&2
+    printf '  no-WatchdogPASSED-in-output: %s\n' "$nopass_ok" >&2
+    printf '  DEGRADED-in-output: %s\n' "$degraded_ok" >&2
+    printf '  not-leak-exit-1: %s\n' "$notleak_ok" >&2
+    printf '  actual output:\n%s\n' "$actual_output_err" >&2
+    FAIL=$((FAIL + 1))
+fi
+
 printf '\n=== Results: %d passed, %d failed ===\n' "$PASS" "$FAIL"
 if [ "$FAIL" -gt 0 ]; then
     exit 1

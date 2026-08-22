@@ -14,7 +14,7 @@ utilities in `C:\Program Files\Git\bin\`.
 Grok Build ships a native PowerShell installer. Open PowerShell and run:
 
 ```powershell
-irm https://grok.build/install.ps1 | iex
+irm https://x.ai/cli/install.ps1 | iex
 ```
 
 Then authenticate: `grok login`

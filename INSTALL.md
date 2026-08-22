@@ -40,7 +40,7 @@ yours locally.
 |------|--------------|-------------|
 | **Claude plugin** | Claude Code (`claude` CLI), then `gh` auth with `repo` + `issues` scopes | `claude plugin marketplace add DamianBuilds-ai/atlas-method` then `claude plugin install atlas-method@damianbuilds` then `/hooks-trust` in the project |
 | **Grok plugin** | Grok Build (curl installer + `grok login`), then `gh` auth | `grok plugin marketplace add DamianBuilds-ai/atlas-method` then `grok plugin install atlas-method-grok --trust` |
-| **npx** | Node >= 22, git | `npx atlas-method init` (scaffolds the template payload and writes a harness) |
+| **npx** | Node >= 22, git | `npx atlas-method init` (planned universal door - coming with the installer workstream; not yet shipped) |
 | **GitHub profile only** | `gh` auth with `repo` + `issues` scopes; add `project` scope only if auto-graduation is on | Clone this repo, copy `templates/` into your personal OS repo, wire hooks manually |
 | **Purely local** | git + a shell harness of your choice. No `gh` required | Clone, copy `templates/`, wire hooks without any remote integration |
 
@@ -54,18 +54,17 @@ yours locally.
 - After install, run `/hooks-trust` in your project root once to allow project hooks
 
 **Grok plugin door**
-- Install Grok Build: `curl -fsSL https://grok.build/install.sh | sh` (or
+- Install Grok Build: `curl -fsSL https://x.ai/cli/install.sh | bash` (or
   the native PowerShell installer on Windows - see Windows note below)
 - `grok login` to authenticate
 - `gh auth login` for the watchdog and refresh commands that call the GitHub API
 - After install: the `--trust` flag on `grok plugin install` grants hook trust
   in one step; no separate `/hooks-trust` command is needed
 
-**npx door**
-- Node >= 22 (the atlas CLI uses `node:sqlite` which requires 22.5.0+)
-- git on PATH
-- Run `npx atlas-method init` in your personal OS repo root
-- The installer will prompt for your maintainer handle and write the harness
+**npx door** (planned - not yet shipped)
+- `npx atlas-method init` is the planned universal door, coming with the installer workstream.
+- The working doors today are the plugin dirs (Claude plugin, Grok plugin) and manual clone.
+- Do not rely on npx for a current installation.
 
 **GitHub profile door**
 - `gh auth login` (repo + issues scopes are the minimum)
