@@ -1,0 +1,22 @@
+{
+  "name": "atlas-method-grok",
+  "displayName": "Atlas Method",
+  "version": "0.1.0",
+  "description": "A lean-by-design methodology for running a personal operating system with Grok Build. Installs the Atlas constitution template, slash commands, session-start hook, and scaffold templates.",
+  "author": "Damian Yazbeck",
+  "homepage": "https://github.com/DamianBuilds-ai/atlas-method",
+  "license": "MIT",
+  "keywords": ["atlas-method", "personal-os", "productivity", "knowledge-management"],
+  "engines": {
+    "grok": ">=0.1.0"
+  },
+  "components": {
+    "skills": "skills/",
+    "commands": "commands/",
+    "hooks": "hooks/hooks.json",
+    "skeleton": "skeleton/"
+  },
+  "install": {
+    "note": "After install, run /hooks-trust in your project root to activate project-level hooks. See skeleton/README.md for first-time setup steps."
+  }
+}

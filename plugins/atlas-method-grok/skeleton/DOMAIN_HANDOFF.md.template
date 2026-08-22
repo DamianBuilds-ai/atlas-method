@@ -1,0 +1,21 @@
+# {DOMAIN} - Handoff
+
+> This branch is the message each session leaves for the next. Where the QUEUE says what is active, the HANDOFF says what just happened and why - the reasoning, the dead ends, the state that does not fit in a checklist. Newest session block at the top. Trim old blocks once they are no longer useful for resuming; the LOG keeps the permanent record.
+
+## {DATE} - {Session summary in a few words}
+
+**Done:**
+- {What was completed this session}
+
+**In progress:**
+- {What was started but not finished, and where it stands}
+
+**Blocked:**
+- {Anything waiting on the user, an external service, or a decision - and what unblocks it}
+
+**Notes for next session:**
+- {Context that does not fit above - a decision made, a gotcha found, a thread to pick up}
+
+---
+
+> Add a new dated block at the TOP for each session. Keep the most recent two or three; older blocks belong in the LOG.

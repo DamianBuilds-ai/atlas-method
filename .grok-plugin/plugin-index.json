@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "plugins": {
+    "atlas-method-grok": {
+      "components": {
+        "skills": [
+          {
+            "name": "atlas-init",
+            "description": "Copy Atlas Method starter files into the current project directory without overwriting anything the user already owns."
+          }
+        ],
+        "commands": [
+          {
+            "name": "atlas",
+            "description": "Self-audit your Atlas Method doc system for size violations, stale items, and leaf extraction candidates."
+          },
+          {
+            "name": "newbot",
+            "description": "Scaffold a new domain in your Atlas Method system - pick an archetype, generate starter files, register the domain."
+          }
+        ],
+        "hooks": [
+          {
+            "event": "SessionStart",
+            "description": "Write baton stub and orientation file for the active domain (M7 contract)."
+          }
+        ]
+      }
+    }
+  }
+}

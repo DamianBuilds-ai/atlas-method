@@ -1,0 +1,21 @@
+{
+  "name": "damianbuilds-grok",
+  "description": "Official Atlas Method plugin marketplace for Grok Build. Adds the Atlas Method methodology as a native Grok plugin: constitution template, slash commands, hooks, and scaffold templates.",
+  "owner": {
+    "name": "Damian Yazbeck",
+    "email": "damian@damianbuilds.com"
+  },
+  "plugins": [
+    {
+      "name": "atlas-method-grok",
+      "displayName": "Atlas Method",
+      "description": "A lean-by-design methodology for running a personal operating system with Grok Build. Slash commands, hooks, and scaffold templates for building a domain-structured knowledge and automation system.",
+      "category": "productivity",
+      "version": "0.1.0",
+      "author": "Damian Yazbeck",
+      "homepage": "https://github.com/DamianBuilds-ai/atlas-method",
+      "tags": ["productivity", "personal-os", "knowledge-management"],
+      "source": { "type": "local", "path": "./plugins/atlas-method-grok" }
+    }
+  ]
+}
