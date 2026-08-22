@@ -2,7 +2,7 @@
 // Run: node --experimental-sqlite test/smoke.js
 // Builds a tiny fixture tree, indexes it, asserts search + refresh behaviour.
 
-import { mkdirSync, writeFileSync, mkdtempSync, rmSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, mkdtempSync, rmSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -533,6 +533,247 @@ console.log('\n--- smoke: Grok hook schema in README ---');
     !readmeCodeBlocks.some(b => b.includes('"event": "SessionStart"')),
     'A README code block still contains the flat wrong Grok schema'
   );
+}
+
+// ---- adapters generate: generator runs + emits expected file set ----
+// Tests that the generator reads adapters/jobs.json and writes the correct
+// number of files across all four runners, with expected content markers.
+console.log('\n--- smoke: adapters generate - runs and emits expected file set ---');
+{
+  const { cmdAdapters } = await import(join(cliDir, 'cmd-adapters.js'));
+  const adaptersTmp = mkdtempSync(join(tmpdir(), 'atlas-adapters-'));
+
+  // Patch repoRoot inside cmdAdapters by writing a minimal jobs.json there.
+  // cmdAdapters resolves paths relative to its own directory; we override by
+  // using the --jobs and --out flags via the cmd args.
+  // Strategy: write a fixture jobs.json, call the generate logic directly.
+  // Since cmdAdapters is a top-level function that reads from repoRoot, we
+  // test via the CLI integration: write jobs.json and templates/ where the
+  // generator expects them, then run with process.chdir into that tree.
+
+  // Build a minimal fixture repo root with the same structure the generator needs.
+  const fixtureRoot = join(adaptersTmp, 'fixture-root');
+  const fixtureAdaptersDir = join(fixtureRoot, 'adapters');
+  mkdirSync(fixtureAdaptersDir, { recursive: true });
+
+  // Minimal jobs.json: two jobs covering both isolation types.
+  const fixtureJobs = {
+    schemaVersion: 1,
+    jobs: {
+      retrieve: {
+        contract: 'Read-only. Verbatim excerpts.',
+        isolation: 'shared',
+        claude: { tiers: ['scout'], model: 'claude-haiku-4-5' },
+        grok: { persona: 'explore', effort: 'low', mode: 'read-only', model: null },
+        codex: { worker: 'explorer', note: 'TBD' },
+        gemini: { worker: 'custom/read-only', note: 'TBD' },
+      },
+      apply: {
+        contract: 'One deterministic edit.',
+        isolation: 'worktree',
+        claude: { tiers: ['setter'], model: 'claude-haiku-4-5' },
+        grok: { persona: 'general-purpose', effort: 'low', mode: 'read-write', isolation: 'worktree', model: null },
+        codex: { worker: 'worker-narrow', note: 'TBD' },
+        gemini: { worker: 'custom', note: 'TBD' },
+      },
+    },
+  };
+  writeFileSync(join(fixtureAdaptersDir, 'jobs.json'), JSON.stringify(fixtureJobs, null, 2));
+  mkdirSync(join(fixtureRoot, 'templates', '.gemini'), { recursive: true });
+
+  // Run generator with --root pointing at fixtureRoot so repoRoot resolves correctly.
+  // Suppress console.log during generation to keep smoke output clean.
+  const genLines = [];
+  const origLog = console.log;
+  console.log = (...a) => genLines.push(a.map(String).join(' '));
+  try {
+    await cmdAdapters(['generate', '--runner', 'all', '--root', fixtureRoot]);
+  } finally {
+    console.log = origLog;
+  }
+
+  // Assert expected files were created.
+  const claudeScout = join(fixtureRoot, 'templates', '.claude', 'agents', 'scout.md');
+  const claudeSetter = join(fixtureRoot, 'templates', '.claude', 'agents', 'setter.md');
+  const grokRetrieve = join(fixtureRoot, 'templates', '.grok', 'agents', 'retrieve.md');
+  const grokApply = join(fixtureRoot, 'templates', '.grok', 'agents', 'apply.md');
+  const codexRetrieve = join(fixtureRoot, 'templates', '.codex', 'agents', 'retrieve.md');
+  const geminiAdapters = join(fixtureRoot, 'templates', '.gemini', 'adapters.md');
+
+  assert('adapters: claude scout.md emitted', existsSync(claudeScout), 'file missing');
+  assert('adapters: claude setter.md emitted', existsSync(claudeSetter), 'file missing');
+  assert('adapters: grok retrieve.md emitted', existsSync(grokRetrieve), 'file missing');
+  assert('adapters: grok apply.md emitted', existsSync(grokApply), 'file missing');
+  assert('adapters: codex retrieve.md emitted', existsSync(codexRetrieve), 'file missing');
+  assert('adapters: gemini adapters.md emitted', existsSync(geminiAdapters), 'file missing');
+
+  // Assert content markers in Claude adapter.
+  const scoutContent = readFileSync(claudeScout, 'utf8');
+  assert(
+    'adapters: claude scout has do-not-hand-edit header',
+    scoutContent.includes('do not hand-edit'),
+    `missing header in: ${scoutContent.slice(0, 100)}`
+  );
+  assert(
+    'adapters: claude scout frontmatter has model pin',
+    scoutContent.includes('model: claude-haiku-4-5'),
+    `missing model pin in: ${scoutContent.slice(0, 200)}`
+  );
+  assert(
+    'adapters: claude scout has no-child-spawn rule',
+    scoutContent.includes('Do not spawn children'),
+    `missing no-spawn rule in: ${scoutContent.slice(0, 300)}`
+  );
+
+  // Assert Grok stub has TODO markers and model-omitted note.
+  const grokContent = readFileSync(grokRetrieve, 'utf8');
+  assert(
+    'adapters: grok stub has TODO schema warning',
+    grokContent.includes('TODO') && grokContent.includes('schema'),
+    `missing TODO/schema in grok stub: ${grokContent.slice(0, 200)}`
+  );
+  assert(
+    'adapters: grok stub states model OMITTED',
+    grokContent.includes('OMITTED'),
+    `model-omitted note missing: ${grokContent.slice(0, 200)}`
+  );
+  assert(
+    'adapters: grok stub states no child spawning',
+    grokContent.includes('No child spawning'),
+    `no-child-spawn missing from grok stub: ${grokContent.slice(0, 300)}`
+  );
+
+  // Assert Grok apply stub has worktree isolation.
+  const grokApplyContent = readFileSync(grokApply, 'utf8');
+  assert(
+    'adapters: grok apply stub has worktree isolation note',
+    grokApplyContent.includes('worktree'),
+    `worktree note missing from grok apply stub: ${grokApplyContent.slice(0, 200)}`
+  );
+
+  // Assert Claude setter (worktree job) body reflects isolation.
+  const setterContent = readFileSync(claudeSetter, 'utf8');
+  assert(
+    'adapters: claude setter has worktree isolation body',
+    setterContent.includes('Worktree isolation'),
+    `worktree isolation missing from setter: ${setterContent.slice(0, 200)}`
+  );
+
+  rmSync(adaptersTmp, { recursive: true, force: true });
+}
+
+// ---- adapters generate: idempotent (same content on re-run) ----
+console.log('\n--- smoke: adapters generate - idempotent re-run ---');
+{
+  const { cmdAdapters: cmdAdapters2 } = await import(join(cliDir, 'cmd-adapters.js'));
+  const idemTmp = mkdtempSync(join(tmpdir(), 'atlas-idem-'));
+  const idemRoot = join(idemTmp, 'root');
+  const idemAdaptersDir = join(idemRoot, 'adapters');
+  mkdirSync(idemAdaptersDir, { recursive: true });
+  mkdirSync(join(idemRoot, 'templates', '.gemini'), { recursive: true });
+
+  const idemJobs = {
+    schemaVersion: 1,
+    jobs: {
+      retrieve: {
+        contract: 'Read-only.',
+        isolation: 'shared',
+        claude: { tiers: ['scout'], model: 'claude-haiku-4-5' },
+        grok: { persona: 'explore', effort: 'low', mode: 'read-only', model: null },
+        codex: { worker: 'explorer', note: 'TBD' },
+        gemini: { worker: 'custom', note: 'TBD' },
+      },
+    },
+  };
+  writeFileSync(join(idemAdaptersDir, 'jobs.json'), JSON.stringify(idemJobs, null, 2));
+
+  const origLog2 = console.log;
+  console.log = () => {};
+
+  // First run.
+  await cmdAdapters2(['generate', '--runner', 'claude', '--root', idemRoot]);
+
+  const scoutPath = join(idemRoot, 'templates', '.claude', 'agents', 'scout.md');
+  const firstContent = readFileSync(scoutPath, 'utf8');
+
+  // Second run.
+  await cmdAdapters2(['generate', '--runner', 'claude', '--root', idemRoot]);
+  console.log = origLog2;
+
+  const secondContent = readFileSync(scoutPath, 'utf8');
+  assert(
+    'adapters: re-run is idempotent (content unchanged)',
+    firstContent === secondContent,
+    `first run length=${firstContent.length}, second run length=${secondContent.length}`
+  );
+
+  rmSync(idemTmp, { recursive: true, force: true });
+}
+
+// ---- adapters generate: hand-edit is detectable (regeneration restores content) ----
+// A file that has been hand-edited will differ from what the generator produces.
+// After regenerating, the file content returns to the generated version.
+// This proves hand-edits are detectable: compare file-on-disk to generator output.
+console.log('\n--- smoke: adapters generate - hand-edit detectable ---');
+{
+  const { cmdAdapters: cmdAdapters3 } = await import(join(cliDir, 'cmd-adapters.js'));
+  const editTmp = mkdtempSync(join(tmpdir(), 'atlas-edit-'));
+  const editRoot = join(editTmp, 'root');
+  const editAdaptersDir = join(editRoot, 'adapters');
+  mkdirSync(editAdaptersDir, { recursive: true });
+  mkdirSync(join(editRoot, 'templates', '.gemini'), { recursive: true });
+
+  const editJobs = {
+    schemaVersion: 1,
+    jobs: {
+      retrieve: {
+        contract: 'Read-only.',
+        isolation: 'shared',
+        claude: { tiers: ['scout'], model: 'claude-haiku-4-5' },
+        grok: { persona: 'explore', effort: 'low', mode: 'read-only', model: null },
+        codex: { worker: 'explorer', note: 'TBD' },
+        gemini: { worker: 'custom', note: 'TBD' },
+      },
+    },
+  };
+  writeFileSync(join(editAdaptersDir, 'jobs.json'), JSON.stringify(editJobs, null, 2));
+
+  const origLog3 = console.log;
+  console.log = () => {};
+
+  // Generate once.
+  await cmdAdapters3(['generate', '--runner', 'claude', '--root', editRoot]);
+  const scoutPath3 = join(editRoot, 'templates', '.claude', 'agents', 'scout.md');
+  const generatedContent = readFileSync(scoutPath3, 'utf8');
+
+  // Simulate a hand-edit.
+  const handEditedContent = generatedContent + '\n<!-- hand-edited line - this should not survive regeneration -->\n';
+  writeFileSync(scoutPath3, handEditedContent);
+
+  // Confirm the modification is detectable (file differs from what generator produces).
+  assert(
+    'adapters: hand-edit changes the file (pre-regen)',
+    handEditedContent !== generatedContent,
+    'hand-edit did not modify the file'
+  );
+
+  // Regenerate.
+  await cmdAdapters3(['generate', '--runner', 'claude', '--root', editRoot]);
+  console.log = origLog3;
+
+  const restoredContent = readFileSync(scoutPath3, 'utf8');
+  assert(
+    'adapters: regeneration restores generated content (hand-edit overwritten)',
+    restoredContent === generatedContent,
+    `restored length=${restoredContent.length}, original length=${generatedContent.length}`
+  );
+  assert(
+    'adapters: hand-edit marker absent after regeneration',
+    !restoredContent.includes('hand-edited line'),
+    'hand-edit marker survived regeneration'
+  );
+
+  rmSync(editTmp, { recursive: true, force: true });
 }
 
 // ---- Summary ----

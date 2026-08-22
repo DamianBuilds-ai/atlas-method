@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "description": "Atlas Method v2 - job adapter definitions. Single source of truth. Generate runner-specific overlays from this file via: atlas adapters generate [--runner claude|grok|all]. Never hand-edit the generated output files.",
+  "jobs": {
+    "retrieve": {
+      "contract": "Read-only. Verbatim excerpts with source citations. Cheap.",
+      "isolation": "shared",
+      "claude": {
+        "tiers": ["scout", "explorer"],
+        "model": "claude-haiku-4-5",
+        "note": "Haiku tier. Two tier names map to this job (scout for structured retrieval, explorer for wide-grep discovery)."
+      },
+      "grok": {
+        "persona": "explore",
+        "effort": "low",
+        "mode": "read-only",
+        "model": null,
+        "note": "model omitted - inherit from parent. Effort: low."
+      },
+      "codex": {
+        "worker": "explorer",
+        "note": "TBD - Codex CLI worker config format not yet specified."
+      },
+      "gemini": {
+        "worker": "custom/read-only",
+        "note": "TBD - Gemini adapter config format not yet specified."
+      }
+    },
+    "apply": {
+      "contract": "One deterministic edit. No inference allowed.",
+      "isolation": "worktree",
+      "claude": {
+        "tiers": ["setter"],
+        "model": "claude-haiku-4-5",
+        "note": "Haiku tier. One deterministic edit - exact match only, no inference."
+      },
+      "grok": {
+        "persona": "general-purpose",
+        "effort": "low",
+        "mode": "read-write",
+        "isolation": "worktree",
+        "model": null,
+        "note": "model omitted - inherit from parent. Worktree isolation: writer job."
+      },
+      "codex": {
+        "worker": "worker-narrow",
+        "note": "TBD - Codex CLI worker config format not yet specified."
+      },
+      "gemini": {
+        "worker": "custom",
+        "note": "TBD - Gemini adapter config format not yet specified."
+      }
+    },
+    "implement": {
+      "contract": "Judgment + verify. Larger scope edit with a rationale.",
+      "isolation": "worktree",
+      "claude": {
+        "tiers": ["builder", "engineer"],
+        "model": "claude-sonnet-4-6",
+        "note": "Sonnet tier. builder for mechanical execution with verification; engineer for multi-file refactors with local judgment calls."
+      },
+      "grok": {
+        "persona": "general-purpose",
+        "effort": "medium",
+        "effort_alt": "high",
+        "mode": "read-write",
+        "isolation": "worktree",
+        "model": null,
+        "note": "model omitted - inherit from parent. medium or high effort depending on scope. Worktree isolation: writer job."
+      },
+      "codex": {
+        "worker": "worker",
+        "note": "TBD - Codex CLI worker config format not yet specified."
+      },
+      "gemini": {
+        "worker": "custom",
+        "note": "TBD - Gemini adapter config format not yet specified."
+      }
+    },
+    "review": {
+      "contract": "Read-only critique. Returns findings, does not edit.",
+      "isolation": "shared",
+      "claude": {
+        "tiers": ["analyst"],
+        "model": "claude-sonnet-4-6",
+        "note": "Sonnet tier. Read-only critique - findings and analysis, no edits."
+      },
+      "grok": {
+        "persona": "read-only",
+        "effort": "medium",
+        "mode": "read-only",
+        "model": null,
+        "note": "model omitted - inherit from parent. Effort: medium."
+      },
+      "codex": {
+        "worker": "custom-reviewer",
+        "note": "TBD - Codex CLI worker config format not yet specified."
+      },
+      "gemini": {
+        "worker": "custom",
+        "note": "TBD - Gemini adapter config format not yet specified."
+      }
+    },
+    "research": {
+      "contract": "Multi-source synthesis. Returns ranked findings with citations.",
+      "isolation": "shared",
+      "claude": {
+        "tiers": ["researcher-practical", "researcher-quality"],
+        "model": "claude-sonnet-4-6",
+        "note": "Sonnet tier. researcher-practical for routine multi-source research; researcher-quality for high blast-radius synthesis."
+      },
+      "grok": {
+        "persona": "researcher",
+        "effort": "high",
+        "effort_alt": "xhigh",
+        "mode": "read-only",
+        "model": null,
+        "note": "model omitted - inherit from parent. high or xhigh effort. Persona is read-only (synthesis, no edits)."
+      },
+      "codex": {
+        "worker": "custom-researcher",
+        "note": "TBD - Codex CLI worker config format not yet specified."
+      },
+      "gemini": {
+        "worker": "custom",
+        "note": "TBD - Gemini adapter config format not yet specified."
+      }
+    },
+    "write": {
+      "contract": "Prose to a brief. Voice-stable output.",
+      "isolation": "shared",
+      "claude": {
+        "tiers": ["scribe"],
+        "model": "claude-sonnet-4-6",
+        "note": "Sonnet tier. Voice-stable drafting - posts, cover letters, voice-critical content."
+      },
+      "grok": {
+        "persona": "write",
+        "effort": "medium",
+        "mode": "read-write",
+        "model": null,
+        "note": "model omitted - inherit from parent. Effort: medium. Shared workspace (write is a reader job per section 13 table)."
+      },
+      "codex": {
+        "worker": "custom-scribe",
+        "note": "TBD - Codex CLI worker config format not yet specified."
+      },
+      "gemini": {
+        "worker": "custom",
+        "note": "TBD - Gemini adapter config format not yet specified."
+      }
+    }
+  }
+}

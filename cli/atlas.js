@@ -8,6 +8,7 @@ import { cmdSearch } from './cmd-search.js';
 import { cmdIndex } from './cmd-index.js';
 import { cmdRefresh } from './cmd-refresh.js';
 import { cmdOrientation } from './cmd-orientation.js';
+import { cmdAdapters } from './cmd-adapters.js';
 
 const [,, cmd, ...rest] = process.argv;
 
@@ -29,6 +30,15 @@ Commands:
       Writes to stdout and optionally to FILE. Fail-open: emits a visible
       notice if no local state is found, never silences.
 
+  adapters generate [--runner claude|grok|codex|gemini|all]
+      Generate runner-specific adapter overlays from adapters/jobs.json.
+      Claude: templates/.claude/agents/{tier}.md (with frontmatter + body).
+      Grok:   templates/.grok/agents/{job}.md  (stubs - schema TODOs marked).
+      Codex:  templates/.codex/agents/{job}.md (stubs).
+      Gemini: templates/.gemini/adapters.md    (stub).
+      Generated files carry a "do not hand-edit" header comment.
+      Re-run to regenerate. Idempotent.
+
 Options for all commands:
   --help    Show this message
 
@@ -42,6 +52,7 @@ switch (cmd) {
   case 'index':  await cmdIndex(rest);  break;
   case 'refresh': await cmdRefresh(rest); break;
   case 'orientation': await cmdOrientation(rest); break;
+  case 'adapters': await cmdAdapters(rest); break;
   case '--help':
   case '-h':
   case undefined:
