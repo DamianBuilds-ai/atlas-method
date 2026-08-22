@@ -323,3 +323,60 @@ And confirm fail-open (no crash on missing atlas):
 PATH=/usr/bin sh templates/hooks/session-start.sh
 # Expect: visible notices on stderr, exit 0, no crash.
 ```
+
+---
+
+## visibility-watchdog.sh - Pre-push privacy guard (slice 5)
+
+The watchdog lives at `scripts/visibility-watchdog.sh` in the repo root.
+It is primarily run by the nightly GitHub Action (`.github/workflows/v2-watchdog.yml`),
+but wiring it as a git pre-push hook catches leaks before they reach the remote.
+
+### What it checks
+
+For every remote in the manifest (`templates/gazetteer.repos` or `privacy.guarded`):
+- **private-tagged** (or untagged, which defaults to private): queries
+  `gh api repos/{owner}/{repo} --jq .visibility` and fails loud if the result
+  is not "private".
+- **public-tagged**: skips with a visible OK line - no API call.
+- **GitHub Projects**: when `gh auth status` shows project scope, also checks
+  that no Project on a private repo is publicly visible. Skipped with a notice
+  when scope is absent.
+
+Exit code 1 and a named-repo message on any violation. Always fails loud, never
+silently passes a bad state.
+
+### Wire as a git pre-push hook
+
+```sh
+# In your repo root - copy or symlink:
+mkdir -p .git/hooks
+cp scripts/visibility-watchdog.sh .git/hooks/pre-push
+chmod +x .git/hooks/pre-push
+```
+
+Or to share the hook across a team via a hooks directory (e.g. with `core.hooksPath`):
+
+```sh
+git config core.hooksPath .githooks
+mkdir -p .githooks
+cp scripts/visibility-watchdog.sh .githooks/pre-push
+chmod +x .githooks/pre-push
+```
+
+The script uses `gh` (GitHub CLI). Authenticate with `gh auth login` before
+the first run. Without `gh`, the script skips all GitHub checks and exits 0.
+
+### Dry-run / testing
+
+Inject a mock `gh` script via PATH to exercise the logic without network:
+
+```sh
+mkdir -p /tmp/mock-bin
+# Returns "public" for any repo query - triggers the fail-loud path:
+printf '#!/bin/sh\nprintf "public"\n' > /tmp/mock-bin/gh
+chmod +x /tmp/mock-bin/gh
+PATH=/tmp/mock-bin:$PATH sh scripts/visibility-watchdog.sh --manifest my-fixture.repos
+```
+
+See `test/watchdog-smoke.sh` for the canonical fixture test suite.

@@ -1,0 +1,91 @@
+name: v2 privacy watchdog
+
+on:
+  schedule:
+    # Nightly at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: run visibility watchdog
+        id: watchdog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          sh scripts/visibility-watchdog.sh 2>&1 | tee /tmp/watchdog-output.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "watchdog_failed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "watchdog_failed=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit "$EXIT_CODE"
+
+      - name: open or update alert issue on failure
+        if: failure() && steps.watchdog.outputs.watchdog_failed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          BODY="## Privacy watchdog alert
+
+          The nightly visibility watchdog found a private-tagged repo that GitHub reports as non-private.
+
+          **Run date:** $(date -u +%Y-%m-%d)
+          **Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          ### Watchdog output
+
+          \`\`\`
+          $(cat /tmp/watchdog-output.txt)
+          \`\`\`
+
+          Review the named repo(s) above and correct GitHub visibility settings.
+          Re-run the workflow after fixing to confirm green."
+
+          # Look for an existing open alert issue (kind:finding label)
+          EXISTING=$(gh issue list \
+            --repo "$GH_REPO" \
+            --label "kind:finding" \
+            --state open \
+            --search "privacy watchdog" \
+            --json number \
+            --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            echo "Updating existing issue #$EXISTING"
+            gh issue comment "$EXISTING" \
+              --repo "$GH_REPO" \
+              --body "$BODY"
+          else
+            echo "Creating new alert issue"
+            # Create issue - label only if it exists in the repo
+            LABEL_EXISTS=$(gh label list \
+              --repo "$GH_REPO" \
+              --json name \
+              --jq '.[] | select(.name == "kind:finding") | .name' 2>/dev/null || echo "")
+            if [ -n "$LABEL_EXISTS" ]; then
+              gh issue create \
+                --repo "$GH_REPO" \
+                --title "Privacy watchdog: private repo visibility leak detected" \
+                --label "kind:finding" \
+                --body "$BODY"
+            else
+              gh issue create \
+                --repo "$GH_REPO" \
+                --title "Privacy watchdog: private repo visibility leak detected" \
+                --body "$BODY"
+            fi
+          fi
