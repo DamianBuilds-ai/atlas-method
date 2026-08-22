@@ -21,3 +21,6 @@ jobs:
       - name: run smoke suite
         working-directory: cli
         run: npm test
+
+      - name: run watchdog smoke (no network, mock gh via PATH)
+        run: sh test/watchdog-smoke.sh

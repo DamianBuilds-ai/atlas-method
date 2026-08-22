@@ -1,0 +1,17 @@
+# Atlas Method gazetteer manifest
+# Format: JSONL (one entry per line). Lines starting with # are comments.
+# Copy this file to ~/.atlas/gazetteer.repos and edit for your setup.
+#
+# Fields:
+#   path        - absolute local path to the repo root (required)
+#   visibility  - "private" or "public" (required; new entries default to "private")
+#   remote      - git remote URL, optional, used by the watchdog privacy check
+#
+# The indexer walks ONLY the paths listed here. Add as many repos as needed.
+# The default entry below indexes the atlas-method repo itself.
+#
+# Watchdog rule: if a repo tagged "private" has a GitHub remote that reports
+# visibility != private, atlas index will warn (not fail) and flag the repo.
+
+{"schema":"gazetteer","version":1}
+{"path":"REPLACE_WITH_ABSOLUTE_PATH_TO_atlas-method","visibility":"public","remote":"https://github.com/DamianBuilds-ai/atlas-method"}

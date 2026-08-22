@@ -1,0 +1,68 @@
+#!/bin/sh
+#
+# atlas-init - bootstrap a fresh Atlas Method v2 instance (Grok plugin edition)
+#
+# Usage:
+#   sh bin/atlas-init [TARGET_DIR]
+#
+# If TARGET_DIR is omitted, the current directory is used. Copies the constitution
+# template and domain skeleton into place. Does not overwrite files that already exist.
+#
+# Sources: GROK_PLUGIN_ROOT (set by plugin system at runtime) or the parent of this
+# script's directory.
+
+set -eu
+
+# ---- resolve paths ----
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+PLUGIN_ROOT="${GROK_PLUGIN_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+SKELETON_DIR="$PLUGIN_ROOT/skeleton"
+
+TARGET_DIR="${1:-$(pwd)}"
+
+if [ ! -d "$SKELETON_DIR" ]; then
+    printf 'error: skeleton directory not found at %s\n' "$SKELETON_DIR" >&2
+    exit 1
+fi
+
+mkdir -p "$TARGET_DIR"
+
+# ---- helper ----
+copy_if_absent() {
+    src="$1"; dest="$2"
+    if [ -e "$dest" ]; then
+        printf '  skip   %s (already exists)\n' "$dest"
+    else
+        cp "$src" "$dest"
+        printf '  create %s\n' "$dest"
+    fi
+}
+
+printf 'Scaffolding Atlas Method v2 instance in: %s\n\n' "$TARGET_DIR"
+
+# ---- constitution ----
+printf 'Constitution:\n'
+copy_if_absent "$SKELETON_DIR/AGENTS.md.template" "$TARGET_DIR/AGENTS.md"
+
+# ---- runner shells ----
+printf '\nRunner shells:\n'
+copy_if_absent "$SKELETON_DIR/CLAUDE.md.template" "$TARGET_DIR/CLAUDE.md"
+copy_if_absent "$SKELETON_DIR/GEMINI.md.template" "$TARGET_DIR/GEMINI.md"
+
+# ---- gazetteer manifest ----
+printf '\nGazetteer manifest:\n'
+copy_if_absent "$SKELETON_DIR/gazetteer.repos.template" "$TARGET_DIR/gazetteer.repos"
+
+# ---- first domain ----
+printf '\nFirst domain (rename DOMAIN -> your first real domain name):\n'
+copy_if_absent "$SKELETON_DIR/DOMAIN.md.template"         "$TARGET_DIR/DOMAIN.md"
+copy_if_absent "$SKELETON_DIR/DOMAIN_QUEUE.md.template"   "$TARGET_DIR/DOMAIN_QUEUE.md"
+copy_if_absent "$SKELETON_DIR/DOMAIN_HANDOFF.md.template" "$TARGET_DIR/DOMAIN_HANDOFF.md"
+copy_if_absent "$SKELETON_DIR/DOMAIN_IDEAS.md.template"   "$TARGET_DIR/DOMAIN_IDEAS.md"
+
+printf '\nDone. Next steps:\n'
+printf '  1. Open %s in Grok Build.\n' "$TARGET_DIR"
+printf '  2. Edit AGENTS.md - replace {{PROJECT_NAME}}, {{DOMAIN}}, {{AM_VERSION}}.\n'
+printf '  3. Edit gazetteer.repos - replace REPLACE_WITH_ABSOLUTE_PATH_TO_atlas-method.\n'
+printf '  4. Rename DOMAIN.* files to your first real domain name.\n'
+printf '  5. Use /atlas-method-grok:newbot to scaffold additional domains.\n'

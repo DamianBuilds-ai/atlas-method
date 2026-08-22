@@ -1,0 +1,31 @@
+# {DOMAIN} - Reference Doc (Trunk)
+
+> This is the trunk: the stable reference material for one domain. It holds the facts that do not change session to session - what this domain is, how it is structured, the key references, the conventions. Active work does NOT live here (that is the QUEUE). History does NOT live here (that is the LOG). Keep it under ~500 lines; when it outgrows that, extract sections into leaves and link them from the index below.
+
+## What This Domain Is
+
+One or two paragraphs. What does this domain cover? Where are its edges? When the user says "{DOMAIN}", what comes into scope and what stays out?
+
+## Key References
+
+The durable facts. Accounts, identifiers, conventions, locations, links. The things you look up but do not change often.
+
+- {Reference one}
+- {Reference two}
+
+## Conventions
+
+How things are done in this domain. Naming patterns, recurring workflows, decisions already made so they are not re-litigated.
+
+- {Convention one}
+- {Convention two}
+
+## Leaf Index
+
+When this trunk grows past ~500 lines, split detailed sections into leaf docs and list them here. The index is how future sessions discover the leaves.
+
+| Leaf | Covers | Load when |
+|------|--------|-----------|
+| {DOMAIN}-{TOPIC}.md | {what it holds} | {what triggers reading it} |
+
+> No leaves yet? Delete the table rows and add them as the domain grows. Do not pre-create leaves you do not need.

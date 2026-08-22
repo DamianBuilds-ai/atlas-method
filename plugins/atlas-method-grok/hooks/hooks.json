@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$GROK_PLUGIN_ROOT/bin/session-start.sh\"",
+            "description": "Write baton stub and orientation file for the active domain (M7). Files are the delivery mechanism - stdout is ignored on SessionStart in Grok Build.",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

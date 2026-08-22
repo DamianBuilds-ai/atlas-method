@@ -17,6 +17,7 @@ jobs:
           PAYLOAD_DIRS=""
           [ -d templates ] && PAYLOAD_DIRS="$PAYLOAD_DIRS templates"
           [ -d plugins/atlas-method ] && PAYLOAD_DIRS="$PAYLOAD_DIRS plugins/atlas-method"
+          [ -d plugins/atlas-method-grok ] && PAYLOAD_DIRS="$PAYLOAD_DIRS plugins/atlas-method-grok"
           if [ -z "$PAYLOAD_DIRS" ]; then
             echo "No installer payload directories found - skipping marker check"
             exit 0

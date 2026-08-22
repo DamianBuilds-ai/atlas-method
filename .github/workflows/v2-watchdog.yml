@@ -1,0 +1,153 @@
+name: v2 privacy watchdog
+
+on:
+  schedule:
+    # Nightly at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: run visibility watchdog
+        id: watchdog
+        # continue-on-error so subsequent steps can branch on the exact exit code.
+        # Exit codes: 0=pass, 1=leak(FAIL), 2=manifest error, 3=api-error(DEGRADED).
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          sh scripts/visibility-watchdog.sh 2>&1 | tee /tmp/watchdog-output.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          exit "$EXIT_CODE"
+
+      # --- Exit 1: confirmed visibility leak - open or update a leak alert issue. ---
+      # Uses label-only lookup (kind:watchdog-alert) - no --search flag (Issues LIST
+      # never Search per spec: search index is delayed and rate-limited).
+      - name: open or update LEAK alert issue (exit 1 - confirmed leak only)
+        if: steps.watchdog.outputs.exit_code == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          BODY="## Privacy watchdog alert - visibility leak
+
+          The nightly visibility watchdog found a private-tagged repo that GitHub reports as non-private.
+
+          **Run date:** $(date -u +%Y-%m-%d)
+          **Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          ### Watchdog output
+
+          \`\`\`
+          $(cat /tmp/watchdog-output.txt)
+          \`\`\`
+
+          Review the named repo(s) above and correct GitHub visibility settings.
+          Re-run the workflow after fixing to confirm green."
+
+          # Label-only lookup for existing leak issue (no --search).
+          EXISTING=$(gh issue list \
+            --repo "$GH_REPO" \
+            --label "kind:watchdog-alert" \
+            --state open \
+            --json number \
+            --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            echo "Updating existing leak issue #$EXISTING"
+            gh issue comment "$EXISTING" \
+              --repo "$GH_REPO" \
+              --body "$BODY"
+          else
+            echo "Creating new leak alert issue"
+            LABEL_EXISTS=$(gh label list \
+              --repo "$GH_REPO" \
+              --json name \
+              --jq '.[] | select(.name == "kind:watchdog-alert") | .name' 2>/dev/null || echo "")
+            if [ -n "$LABEL_EXISTS" ]; then
+              gh issue create \
+                --repo "$GH_REPO" \
+                --title "Privacy watchdog: private repo visibility leak detected" \
+                --label "kind:watchdog-alert" \
+                --body "$BODY"
+            else
+              gh issue create \
+                --repo "$GH_REPO" \
+                --title "Privacy watchdog: private repo visibility leak detected" \
+                --body "$BODY"
+            fi
+          fi
+
+      # --- Exit 3: API error (DEGRADED) - separate notice, never a false leak alarm. ---
+      - name: open or update DEGRADED notice (exit 3 - api-error only)
+        if: steps.watchdog.outputs.exit_code == '3'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          BODY="## Privacy watchdog degraded - API error
+
+          The nightly visibility watchdog could not confirm repo visibility for one or more entries.
+          This is an API error, NOT a confirmed leak. No PASS is claimed.
+
+          **Run date:** $(date -u +%Y-%m-%d)
+          **Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          ### Watchdog output
+
+          \`\`\`
+          $(cat /tmp/watchdog-output.txt)
+          \`\`\`
+
+          Check gh auth and GitHub API availability. Re-run the workflow to get a clean result."
+
+          # Label-only lookup for existing degraded notice (no --search).
+          EXISTING=$(gh issue list \
+            --repo "$GH_REPO" \
+            --label "kind:watchdog-degraded" \
+            --state open \
+            --json number \
+            --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            echo "Updating existing degraded notice #$EXISTING"
+            gh issue comment "$EXISTING" \
+              --repo "$GH_REPO" \
+              --body "$BODY"
+          else
+            echo "Creating new degraded notice"
+            LABEL_EXISTS=$(gh label list \
+              --repo "$GH_REPO" \
+              --json name \
+              --jq '.[] | select(.name == "kind:watchdog-degraded") | .name' 2>/dev/null || echo "")
+            if [ -n "$LABEL_EXISTS" ]; then
+              gh issue create \
+                --repo "$GH_REPO" \
+                --title "Privacy watchdog degraded: API error - visibility inconclusive" \
+                --label "kind:watchdog-degraded" \
+                --body "$BODY"
+            else
+              gh issue create \
+                --repo "$GH_REPO" \
+                --title "Privacy watchdog degraded: API error - visibility inconclusive" \
+                --body "$BODY"
+            fi
+          fi
+
+      # Fail the job if watchdog reported anything other than a clean pass.
+      - name: fail job on non-zero watchdog exit
+        if: steps.watchdog.outputs.exit_code != '0'
+        run: |
+          echo "Watchdog exit code: ${{ steps.watchdog.outputs.exit_code }}"
+          exit 1
