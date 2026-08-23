@@ -205,10 +205,20 @@ baton_step() {
         return
     fi
 
-    # Write the stub from the template. Use the baton-stub.md template if present,
-    # otherwise write a minimal inline stub.
-    stub_template="templates/baton-stub.md"
-    if [ -f "$stub_template" ]; then
+    # Write the stub from the template. Resolve the baton-stub.md template:
+    # - Installed target layout: baton-stub.md at the project root (installed by atlas init).
+    # - In-repo dev layout: templates/baton-stub.md (running from the method repo itself).
+    # Try installed location first so the hook works correctly in both contexts.
+    if [ -f "baton-stub.md" ]; then
+        stub_template="baton-stub.md"
+    elif [ -f "templates/baton-stub.md" ]; then
+        stub_template="templates/baton-stub.md"
+        notice "baton-stub.md not found at project root - using templates/ fallback (dev layout)"
+    else
+        stub_template=""
+        notice "baton-stub.md not found in installed location (baton-stub.md) or templates/ - using minimal stub"
+    fi
+    if [ -n "$stub_template" ] && [ -f "$stub_template" ]; then
         # Replace {{DOMAIN}} and {{TIMESTAMP}} tokens from the template.
         sed "s/{{DOMAIN}}/${domain}/g; s/{{TIMESTAMP}}/${ts}/g" \
             "$stub_template" > "$baton_path" 2>/dev/null || {
@@ -226,11 +236,11 @@ write_minimal_stub() {
     printf '# Baton stub - %s - %s\n\n' "$dom" "$ts" > "$path"
     printf 'source-baton: (none - session start)\n\n' >> "$path"
     printf '## Items this session\n\n' >> "$path"
-    printf '- [ ] (fill in as the session progresses)\n\n' >> "$path"
+    printf '%s\n\n' '- [ ] (fill in as the session progresses)' >> "$path"
     printf '## Terminal states\n\n' >> "$path"
-    printf '- [ ] PROMOTED: \n' >> "$path"
-    printf '- [ ] DROPPED: \n' >> "$path"
-    printf '- [ ] CARRIED: \n' >> "$path"
+    printf '%s\n' '- [ ] PROMOTED: ' >> "$path"
+    printf '%s\n' '- [ ] DROPPED: ' >> "$path"
+    printf '%s\n' '- [ ] CARRIED: ' >> "$path"
 }
 
 ( baton_step ) || notice "baton step encountered an error - continuing"

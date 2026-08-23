@@ -29,6 +29,7 @@
  *   templates/gazetteer.repos
  *   templates/baton-stub.md
  *   templates/WORKTREES.md
+ *   templates/scripts/worktree-gc.sh
  *   adapters/jobs.json   (source for adapter generation - hashed so update detects schema drift)
  *
  * Generated adapters (.claude/agents/, .grok/agents/, etc.) are NOT in the
@@ -51,6 +52,7 @@ const MANIFEST_PAYLOAD = [
   'templates/gazetteer.repos',
   'templates/baton-stub.md',
   'templates/WORKTREES.md',
+  'templates/scripts/worktree-gc.sh',
   'adapters/jobs.json',
 ];
 

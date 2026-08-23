@@ -1,0 +1,8 @@
+# Session worktree marker - untracked runtime artifact written by the parent
+# agent at worktree creation time and removed by worktree-gc.sh at wrap.
+# Must NOT be committed - if committed and merged to main it propagates to
+# all new branches, causing gc to remove unrelated worktrees.
+.atlas-session-worktree
+
+# Node
+node_modules/

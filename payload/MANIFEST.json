@@ -1,17 +1,18 @@
 {
   "schemaVersion": 1,
   "methodVersion": "1.1.4",
-  "builtAt": "2026-08-23T00:12:14.508Z",
+  "builtAt": "2026-08-23T10:32:56.140Z",
   "files": {
-    "templates/AGENTS.md": "d194bf74f7902754b9bf07d8136c178cbe0aeda663b524e39d27d5f46020d9fc",
+    "templates/AGENTS.md": "c6744caa5c9e057e811b60a73c766c773ade51345b1b66f7dd6bf2aea6f3f02a",
     "templates/CLAUDE.md": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
     "templates/GEMINI.md": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
     "templates/.gemini/settings.json": "73585577a3e0a4cf0153e59177edf6ac8910f27e8eadeb7ce2893de4f6eca7f1",
     "templates/hooks/datetime.sh": "87a16692c2de5fe4dcdaef90a37999c0091cac22c0bdd18bf8c70f7eaa80de0a",
-    "templates/hooks/session-start.sh": "20a992fc78bde17370d90a29113c4d288b045b3e8115f3ff9bde7cd087203687",
+    "templates/hooks/session-start.sh": "5056133c9b66d40f5cad7354137ea473ed1327a98cde73f53ad60809c5944d71",
     "templates/gazetteer.repos": "18a7059738324b8a680f185242d05c990d3da951ff7aeeeb60d169a675739a8a",
     "templates/baton-stub.md": "db6b38777db46c50966620ee72cb93814f9dabe06e4923ed0201d2fcb798dd01",
-    "templates/WORKTREES.md": "0450f0a7d43ae26d50114dbd42267ab3a6f0778e401fec1a350ab03b84dc62dc",
+    "templates/WORKTREES.md": "f917825aeaddc8121d795392c29a85f40f2806ea6e08fd54fb1ea342c1ef36d6",
+    "templates/scripts/worktree-gc.sh": "8ef13221752d974b4334ddb794918dd5984f37dbc0298cbbba2c556a9b3bf930",
     "adapters/jobs.json": "75f8c64d2ca473c8c91b543c690fe474c10e9a471152ffee29e465f1032c6d71"
   }
 }

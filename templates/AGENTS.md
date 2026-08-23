@@ -128,8 +128,9 @@ until apply.
 Rules:
 - Readers (retrieve, review, research, write): shared workspace, no copy.
 - Writers (apply, implement): `isolation: worktree` or runner equivalent.
-- At wrap / SessionEnd: apply wanted worktrees, then delete every worktree
-  this session created. The runner does not gc for us.
+- At wrap / SessionEnd: apply wanted worktrees, then run
+  `sh scripts/worktree-gc.sh` to remove session-created and merged trees.
+  The runner does not gc for us (see WORKTREES.md).
 - Parent orchestrates worktree creation and apply. Never delegate that to a
   child job.
 

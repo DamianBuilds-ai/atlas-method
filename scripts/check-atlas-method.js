@@ -28,6 +28,11 @@
  *      a repo-root AGENTS.md direct path. (Belt-and-suspenders against M1 drift.)
  *   8. Root package.json version field must match VERSION file (new version
  *      surface added with the npx installer; gate asserts they stay in sync).
+ *   9. Plugin manifest version surfaces must match VERSION file.
+ *  10. payload/MANIFEST.json freshness: every files[] sha256 must match the
+ *      actual on-disk hash of that template file. A stale manifest suppresses
+ *      updates to adopters. Fails the gate so CI catches missed build-manifest
+ *      runs before any PR lands.
  *
  *   Checks 4 and 5 both skip docs/gearbox-adr/ - those are upstream Gearbox
  *   protocol ADRs, copied verbatim and hash-stamped by the gearbox tooling
@@ -403,6 +408,55 @@ if (version) {
         `${label} version "${pluginJson.version}" does not match VERSION file "${version}". ` +
         'Run npm run build-manifest to stamp the correct version, then commit.'
       );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 10. payload/MANIFEST.json freshness: every files[] hash must match the
+//     actual on-disk sha256 of the corresponding template file.
+//     A stale manifest causes cmd-update to report "All tracked files current"
+//     for files that actually changed, silently suppressing updates to adopters.
+//     This check ensures build-manifest is re-run before any PR lands.
+// ---------------------------------------------------------------------------
+
+{
+  const manifestPath = path.join(REPO_ROOT, 'payload', 'MANIFEST.json');
+  if (!fs.existsSync(manifestPath)) {
+    fail('payload/MANIFEST.json not found - run npm run build-manifest');
+  } else {
+    let manifest;
+    try {
+      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    } catch (e) {
+      fail(`could not parse payload/MANIFEST.json: ${e.message}`);
+      manifest = null;
+    }
+    if (manifest && manifest.files && typeof manifest.files === 'object') {
+      const crypto = require('crypto');
+      let anyStale = false;
+      for (const [relPath, recordedHash] of Object.entries(manifest.files)) {
+        const absPath = path.join(REPO_ROOT, relPath);
+        if (!fs.existsSync(absPath)) {
+          fail(`manifest references missing file: ${relPath}`);
+          anyStale = true;
+          continue;
+        }
+        const diskHash = crypto.createHash('sha256').update(fs.readFileSync(absPath)).digest('hex');
+        if (diskHash !== recordedHash) {
+          fail(
+            `payload/MANIFEST.json is stale for ${relPath} - ` +
+            `recorded ${recordedHash.slice(0, 16)}... but disk is ${diskHash.slice(0, 16)}... ` +
+            'Run npm run build-manifest and commit the result.'
+          );
+          anyStale = true;
+        }
+      }
+      if (!anyStale) {
+        ok(`payload/MANIFEST.json is fresh (${Object.keys(manifest.files).length} files verified)`);
+      }
+    } else if (manifest) {
+      fail('payload/MANIFEST.json has no files map - run npm run build-manifest');
     }
   }
 }

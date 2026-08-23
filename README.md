@@ -1,5 +1,7 @@
 # Atlas Method
 
+> **v2 is being built in the open.** The method core on `master` is v2 machinery (constitutions, JSONL+CLI, session hook, adapters, watchdog, installer). The v1 method docs below remain current for v1 users until the rename-swap. Track progress at [issue #38](https://github.com/DamianBuilds-ai/atlas-method/issues/38).
+
 *Lean-by-design methodology for running your life through Claude Code.*
 
 ![Version](https://img.shields.io/github/v/release/DamianBuilds-ai/atlas-method)
