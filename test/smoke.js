@@ -823,6 +823,33 @@ const GEARBOX_MARKERS = [
   }
 }
 
+// ---- session-start.sh source identity: templates/hooks/ and plugins/atlas-method-grok/bin/ must stay byte-identical ----
+// These are two repo copies of the same script. Drift means Grok plugin users get different behaviour
+// from direct atlas-method users. Whole-file assertion catches any unsynced edit.
+{
+  const templateSS = resolve(thisDir, '..', 'templates', 'hooks', 'session-start.sh');
+  const pluginSS = resolve(thisDir, '..', 'plugins', 'atlas-method-grok', 'bin', 'session-start.sh');
+  assert(
+    'session-start: templates/hooks/session-start.sh exists',
+    existsSync(templateSS),
+    'templates/hooks/session-start.sh missing from method repo'
+  );
+  assert(
+    'session-start: plugins/atlas-method-grok/bin/session-start.sh exists',
+    existsSync(pluginSS),
+    'plugins/atlas-method-grok/bin/session-start.sh missing from method repo'
+  );
+  if (existsSync(templateSS) && existsSync(pluginSS)) {
+    const templateBytes = readFileSync(templateSS);
+    const pluginBytes = readFileSync(pluginSS);
+    assert(
+      'session-start: templates/hooks/session-start.sh == plugins/atlas-method-grok/bin/session-start.sh (byte-identical)',
+      templateBytes.equals(pluginBytes),
+      `session-start.sh copies diverged: templates/hooks/ is ${templateBytes.length}b, plugins/atlas-method-grok/bin/ is ${pluginBytes.length}b`
+    );
+  }
+}
+
 // ---- init: scaffold into a fresh fixture dir - all payload files present ----
 console.log('\n--- smoke: atlas init - scaffold into fresh dir ---');
 {

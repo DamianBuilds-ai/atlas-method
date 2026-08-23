@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "methodVersion": "1.1.4",
-  "builtAt": "2026-08-23T10:16:34.557Z",
+  "builtAt": "2026-08-23T10:32:56.140Z",
   "files": {
     "templates/AGENTS.md": "c6744caa5c9e057e811b60a73c766c773ade51345b1b66f7dd6bf2aea6f3f02a",
     "templates/CLAUDE.md": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
