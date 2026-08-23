@@ -1130,10 +1130,13 @@ console.log('\n--- smoke: atlas update - true no-op after fresh init ---');
     'UPDATE-REPORT.md was written on a no-op (false positive: every file should be IDENTICAL)'
   );
 
-  // Output should confirm nothing to update
+  // Output should confirm nothing to update.
+  // Clean state prints "All tracked files current. Nothing to update."
+  // State with local edits prints "N locally modified files kept. Nothing to update."
+  // Both contain "Nothing to update." - that is the stable assertion target.
   assert(
     'update no-op: output confirms everything current',
-    noopOutput.includes('IDENTICAL') || noopOutput.includes('Nothing to update'),
+    noopOutput.includes('Nothing to update'),
     `no-op did not confirm everything current: "${noopOutput}"`
   );
 

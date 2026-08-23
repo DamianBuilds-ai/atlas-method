@@ -242,12 +242,12 @@ export async function cmdUpdate(args) {
   );
 
   if (!needsWork) {
-    console.log('\nAll tracked files are IDENTICAL or LOCALLY-MODIFIED. Nothing to update.');
-    // Still show local edits as an FYI
     const localEdits = fileResults.filter((r) => r.status === 'LOCALLY-MODIFIED');
     if (localEdits.length > 0) {
-      console.log(`\nLocally modified files (${localEdits.length}) - your edits, kept:`);
+      console.log(`\n${localEdits.length} locally modified file${localEdits.length === 1 ? '' : 's'} kept. Nothing to update.`);
       localEdits.forEach((r) => console.log(`  ~ ${r.targetRel}`));
+    } else {
+      console.log('\nAll tracked files current. Nothing to update.');
     }
     return;
   }

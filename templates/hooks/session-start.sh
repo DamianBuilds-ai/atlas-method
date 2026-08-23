@@ -236,11 +236,11 @@ write_minimal_stub() {
     printf '# Baton stub - %s - %s\n\n' "$dom" "$ts" > "$path"
     printf 'source-baton: (none - session start)\n\n' >> "$path"
     printf '## Items this session\n\n' >> "$path"
-    printf '- [ ] (fill in as the session progresses)\n\n' >> "$path"
+    printf '%s\n\n' '- [ ] (fill in as the session progresses)' >> "$path"
     printf '## Terminal states\n\n' >> "$path"
-    printf '- [ ] PROMOTED: \n' >> "$path"
-    printf '- [ ] DROPPED: \n' >> "$path"
-    printf '- [ ] CARRIED: \n' >> "$path"
+    printf '%s\n' '- [ ] PROMOTED: ' >> "$path"
+    printf '%s\n' '- [ ] DROPPED: ' >> "$path"
+    printf '%s\n' '- [ ] CARRIED: ' >> "$path"
 }
 
 ( baton_step ) || notice "baton step encountered an error - continuing"

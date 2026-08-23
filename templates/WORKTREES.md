@@ -34,18 +34,27 @@ Readers (retrieve, review, research, write) always share the parent workspace.
 
 ---
 
-## Grok Build note
+## Wrap-time worktree gc
 
-Grok Build does not gc worktrees at session end. The wrap step must explicitly run:
+The wrap step must run `scripts/worktree-gc.sh` after applying wanted worktrees.
+The script handles the cleanup automatically:
+
+- **Session-created trees** are identified by a marker file `.atlas-session-worktree`
+  in the worktree root. Parent agents write this marker at creation time.
+  The marker must stay untracked (add `.atlas-session-worktree` to `.gitignore`);
+  committing it causes it to propagate through merges and triggers false removals.
+- **Merged trees** (branch fully merged into HEAD) are also removed.
+- **Dirty trees** (uncommitted changes) are skipped with a printed notice so you
+  can review before removing manually.
+- **Foreign/manual trees** (no marker, not merged) are left untouched.
 
 ```
-git worktree remove --force <worktree-path>
+sh scripts/worktree-gc.sh          # live run
+sh scripts/worktree-gc.sh --dry-run  # preview what would be removed
 ```
 
-for every worktree created in the session, after applying wanted ones.
-
-Register this as part of the wrap hook or run it manually. A session that ends
-without cleanup leaves orphaned directories. Run `git worktree list` to audit.
+Grok does not gc worktrees automatically. Without this step, disk fills with
+orphaned directories. Run `git worktree list` to audit any leftovers.
 
 ---
 
