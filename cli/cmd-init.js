@@ -26,7 +26,7 @@
 // The file list installed is derived from payload/MANIFEST.json (single source).
 // Every file in the manifest is installed so the manifest and init can never drift.
 
-import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync, appendFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -293,6 +293,33 @@ export async function cmdInit(args) {
       mkdirSync(sessionsDir, { recursive: true });
       writeFileSync(join(sessionsDir, '.gitkeep'), '');
       written.push('sessions/current/.gitkeep');
+    }
+  }
+
+  // -- .gitignore: ensure .atlas-session-worktree marker is listed --
+  // The gc script (scripts/worktree-gc.sh) relies on the marker staying
+  // untracked. If it is committed it propagates and gc removes unrelated trees.
+  // Init adds the ignore entry so adopters do not have to remember to do it.
+  {
+    const gitignorePath = join(targetDir, '.gitignore');
+    const markerEntry = '.atlas-session-worktree';
+    let needsEntry = true;
+    if (existsSync(gitignorePath)) {
+      const current = readFileSync(gitignorePath, 'utf8');
+      if (current.split('\n').some((l) => l.trim() === markerEntry)) {
+        needsEntry = false;
+      }
+    }
+    if (needsEntry) {
+      // Append with a leading newline to avoid joining with an existing last line.
+      const toAppend = `\n# Atlas Method: worktree session marker - must stay untracked\n${markerEntry}\n`;
+      if (existsSync(gitignorePath)) {
+        appendFileSync(gitignorePath, toAppend, 'utf8');
+        written.push('.gitignore (appended marker entry)');
+      } else {
+        writeFileSync(gitignorePath, toAppend.trimStart(), 'utf8');
+        written.push('.gitignore');
+      }
     }
   }
 

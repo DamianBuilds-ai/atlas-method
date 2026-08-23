@@ -2,8 +2,9 @@
 // Run: node --experimental-sqlite test/smoke.js
 // Builds a tiny fixture tree, indexes it, asserts search + refresh behaviour.
 
-import { mkdirSync, writeFileSync, mkdtempSync, rmSync, readFileSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { mkdirSync, writeFileSync, mkdtempSync, rmSync, readFileSync, existsSync, cpSync } from 'node:fs';
+import { join, dirname, resolve } from 'node:path';
+import { execSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
@@ -793,6 +794,35 @@ const GEARBOX_MARKERS = [
   'npx gearbox-agents',
 ];
 
+// ---- gc-script source identity: scripts/ and templates/scripts/ must stay byte-identical ----
+// This mirrors the session-start.sh pair: two repo copies of the same script.
+// templates/scripts/worktree-gc.sh is what init installs; scripts/worktree-gc.sh is
+// what wrap instructions reference directly when run from inside the method repo.
+// Drift between them means adopter and developer get different behaviour.
+{
+  const repoGc = resolve(thisDir, '..', 'scripts', 'worktree-gc.sh');
+  const templateGc = resolve(thisDir, '..', 'templates', 'scripts', 'worktree-gc.sh');
+  assert(
+    'gc-script: scripts/worktree-gc.sh exists',
+    existsSync(repoGc),
+    'scripts/worktree-gc.sh missing from method repo'
+  );
+  assert(
+    'gc-script: templates/scripts/worktree-gc.sh exists',
+    existsSync(templateGc),
+    'templates/scripts/worktree-gc.sh missing from method repo'
+  );
+  if (existsSync(repoGc) && existsSync(templateGc)) {
+    const repoBytes = readFileSync(repoGc);
+    const templateBytes = readFileSync(templateGc);
+    assert(
+      'gc-script: scripts/worktree-gc.sh == templates/scripts/worktree-gc.sh (byte-identical)',
+      repoBytes.equals(templateBytes),
+      `gc script copies diverged: scripts/ is ${repoBytes.length}b, templates/scripts/ is ${templateBytes.length}b`
+    );
+  }
+}
+
 // ---- init: scaffold into a fresh fixture dir - all payload files present ----
 console.log('\n--- smoke: atlas init - scaffold into fresh dir ---');
 {
@@ -821,6 +851,9 @@ console.log('\n--- smoke: atlas init - scaffold into fresh dir ---');
     // must be installed by init (Bug 2 fix - single source, no parallel lists).
     'baton-stub.md',
     'WORKTREES.md',
+    // gc script: manifested so init always ships the wrap-time cleanup script
+    // (MUST 2 fix - constitution s.6 and WORKTREES.md reference this path).
+    'scripts/worktree-gc.sh',
     'sessions/current/.gitkeep',
   ];
 
@@ -900,6 +933,35 @@ console.log('\n--- smoke: atlas init - scaffold into fresh dir ---');
     scoutContent.includes('do not hand-edit'),
     'do-not-hand-edit header missing from adapter'
   );
+
+  // gc-script identity: installed scripts/worktree-gc.sh must be byte-identical
+  // to templates/scripts/worktree-gc.sh in the package. Both come from the same
+  // source; drift here means one was edited without updating the other.
+  const installedGc = join(initTmp, 'scripts', 'worktree-gc.sh');
+  const pkgGcTemplate = resolve(thisDir, '..', 'templates', 'scripts', 'worktree-gc.sh');
+  if (existsSync(installedGc) && existsSync(pkgGcTemplate)) {
+    const installedGcBytes = readFileSync(installedGc);
+    const templateGcBytes = readFileSync(pkgGcTemplate);
+    assert(
+      'init: installed scripts/worktree-gc.sh is byte-identical to templates/scripts/worktree-gc.sh',
+      installedGcBytes.equals(templateGcBytes),
+      `gc script byte mismatch: installed ${installedGcBytes.length}b vs template ${templateGcBytes.length}b`
+    );
+  }
+
+  // .gitignore marker: init must write .atlas-session-worktree to .gitignore
+  // so the worktree marker stays untracked in adopter repos.
+  const gitignorePath = join(initTmp, '.gitignore');
+  if (existsSync(gitignorePath)) {
+    const gitignoreContent = readFileSync(gitignorePath, 'utf8');
+    assert(
+      'init: .gitignore contains .atlas-session-worktree marker entry',
+      gitignoreContent.split('\n').some((l) => l.trim() === '.atlas-session-worktree'),
+      `marker line not found in .gitignore: "${gitignoreContent.slice(0, 200)}"`
+    );
+  } else {
+    assert('init: .gitignore exists after init (marker entry required)', false, '.gitignore not created');
+  }
 
   rmSync(initTmp, { recursive: true, force: true });
 }
@@ -1140,7 +1202,146 @@ console.log('\n--- smoke: atlas update - true no-op after fresh init ---');
     `no-op did not confirm everything current: "${noopOutput}"`
   );
 
+  // Exact clean-state sentence: a fresh init with zero edits must print the
+  // specific "All tracked files current." prefix, not a modified-files variant.
+  assert(
+    'update no-op: exact clean-state sentence present',
+    noopOutput.includes('All tracked files current. Nothing to update.'),
+    `exact clean sentence missing from no-op output: "${noopOutput}"`
+  );
+
   rmSync(noopTmp, { recursive: true, force: true });
+}
+
+// ---- manifest freshness smoke: payload/MANIFEST.json must match on-disk hashes ----
+// This is a lightweight smoke companion to gate check 10. Gate catches it in CI;
+// smoke pins the contract so any template edit that skips build-manifest is caught
+// in the local test run too.
+console.log('\n--- smoke: payload/MANIFEST.json freshness ---');
+{
+  const crypto = await import('node:crypto');
+  const manifestPath = resolve(thisDir, '..', 'payload', 'MANIFEST.json');
+  const repoRoot = resolve(thisDir, '..');
+  assert(
+    'manifest: payload/MANIFEST.json exists',
+    existsSync(manifestPath),
+    'payload/MANIFEST.json not found'
+  );
+  if (existsSync(manifestPath)) {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    let allFresh = true;
+    for (const [relPath, recordedHash] of Object.entries(manifest.files || {})) {
+      const absPath = join(repoRoot, relPath);
+      if (!existsSync(absPath)) {
+        assert(`manifest: ${relPath} exists on disk`, false, 'file missing');
+        allFresh = false;
+        continue;
+      }
+      const diskHash = crypto.default.createHash('sha256').update(readFileSync(absPath)).digest('hex');
+      if (diskHash !== recordedHash) {
+        assert(
+          `manifest: ${relPath} hash is fresh`,
+          false,
+          `recorded ${recordedHash.slice(0, 16)}... disk ${diskHash.slice(0, 16)}... - run npm run build-manifest`
+        );
+        allFresh = false;
+      }
+    }
+    if (allFresh) {
+      assert(
+        `manifest: all ${Object.keys(manifest.files || {}).length} file hashes are fresh`,
+        true
+      );
+    }
+  }
+}
+
+// ---- gc: prefix-branch fixture (MUST 3 regression guard) ----
+// Scenario: feat-extra merged into HEAD, feat has a unique unmerged commit, no marker.
+// Before the fix, grep -qF " feat" matched "  feat-extra" and deleted feat's tree.
+// After the fix (merge-base --is-ancestor), feat must SURVIVE and feat-extra REMOVED.
+console.log('\n--- smoke: worktree-gc prefix-branch fixture ---');
+{
+  const gcTmp = mkdtempSync(join(tmpdir(), 'atlas-gc-smoke-'));
+  const gcOut = [];
+  let gcPassed = true;
+
+  try {
+    const git = (args, cwd = gcTmp) =>
+      execSync(`git ${args}`, { cwd, stdio: 'pipe' }).toString().trim();
+
+    // Initialise a bare repo (no user.email required for this test, but set to be safe).
+    git('init -b main');
+    git('config user.email "smoke@test"');
+    git('config user.name "Smoke"');
+
+    // Initial commit on main so HEAD exists.
+    writeFileSync(join(gcTmp, 'README.md'), '# test\n');
+    git('add README.md');
+    git('commit -m "init"');
+
+    // feat-extra branch: one commit, then merge into main.
+    git('checkout -b feat-extra');
+    writeFileSync(join(gcTmp, 'feat-extra.txt'), 'feat-extra content\n');
+    git('add feat-extra.txt');
+    git('commit -m "feat-extra commit"');
+    git('checkout main');
+    git('merge --no-ff feat-extra -m "merge feat-extra"');
+
+    // feat branch: one unique commit NOT merged into main.
+    git('checkout -b feat');
+    writeFileSync(join(gcTmp, 'feat-only.txt'), 'feat-only unmerged\n');
+    git('add feat-only.txt');
+    git('commit -m "feat unique unmerged commit"');
+    git('checkout main');
+
+    // Add worktrees for both branches.
+    const featExtraWt = join(gcTmp, 'wt-feat-extra');
+    const featWt = join(gcTmp, 'wt-feat');
+    git(`worktree add "${featExtraWt}" feat-extra`);
+    git(`worktree add "${featWt}" feat`);
+
+    // Confirm feat-only.txt exists in feat worktree before gc.
+    const featOnlyBefore = existsSync(join(featWt, 'feat-only.txt'));
+
+    // Run gc from inside the main worktree.
+    const gcScript = resolve(thisDir, '..', 'scripts', 'worktree-gc.sh');
+    let gcOutput = '';
+    try {
+      gcOutput = execSync(`sh "${gcScript}"`, { cwd: gcTmp, stdio: 'pipe' }).toString();
+    } catch (e) {
+      gcOutput = (e.stdout || '').toString();
+    }
+
+    // feat-extra worktree should be REMOVED (branch merged).
+    const featExtraAfter = existsSync(featExtraWt);
+    assert(
+      'gc prefix-fixture: feat-extra worktree removed (branch merged)',
+      !featExtraAfter,
+      `feat-extra worktree still exists after gc: ${gcOutput}`
+    );
+
+    // feat worktree must SURVIVE (unmerged, no marker).
+    const featAfter = existsSync(featWt);
+    assert(
+      'gc prefix-fixture: feat worktree survived (unmerged, no marker)',
+      featAfter,
+      `feat worktree was wrongly removed (data loss): ${gcOutput}`
+    );
+
+    // feat-only.txt must still exist (data loss guard).
+    const featOnlyAfter = featAfter && existsSync(join(featWt, 'feat-only.txt'));
+    assert(
+      'gc prefix-fixture: feat-only.txt survived (no data loss)',
+      featOnlyAfter,
+      `feat-only.txt was deleted (data loss): ${gcOutput}`
+    );
+
+  } catch (e) {
+    assert('gc prefix-fixture: setup succeeded', false, e.message);
+  } finally {
+    rmSync(gcTmp, { recursive: true, force: true });
+  }
 }
 
 // ============================================================
