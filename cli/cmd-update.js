@@ -6,7 +6,19 @@
 // Adopted from the gearbox-update pattern (hash-stamp drift detection):
 //   - sha256(file) slice 0..12 used for display; full 64-char hash for comparison.
 //   - Four states per file: identical | locally-modified | upstream-changed | conflict
-//   - Constitution changes (AGENTS.md) always flagged loudest in the report.
+//   - Constitution changes (AGENTS.md) flagged loudest only for upstream-changed/conflict.
+//
+// THREE-HASH MODEL (see also cmd-init.js header comment):
+//   pkgCurrentHash   = currentManifest.files[rel]
+//                      Hash of the template file in the package RIGHT NOW.
+//   pkgInstalledHash = installedManifest.files[rel]
+//                      Hash of the template file at the time of install.
+//                      Upstream-change detection: pkgCurrentHash != pkgInstalledHash.
+//   writtenHash      = installedManifest.writtenHashes?.[rel] ?? pkgInstalledHash
+//                      Hash of what was ACTUALLY WRITTEN to the target at install.
+//                      For personalized files (AGENTS.md, gazetteer.repos) this
+//                      differs from pkgInstalledHash because substitution runs.
+//                      Local-edit detection: targetHash != writtenHash.
 //
 // Ref: Draft 3 section 14, 7 (schema bumps = versioned JSONL header + installer hash-sync),
 // gearbox gap analysis "downstream sync machinery" section.
@@ -158,6 +170,14 @@ export async function cmdUpdate(args) {
 
   for (const [templateRel, pkgCurrentHash] of Object.entries(currentManifest.files)) {
     const pkgInstalledHash = installedManifest.files ? installedManifest.files[templateRel] : null;
+    // writtenHash: what was actually written to disk at install time (post-personalization).
+    // Falls back to pkgInstalledHash for manifests written by older init versions that
+    // did not record writtenHashes (safe: non-personalized files have equal hashes anyway;
+    // personalized files on older installs may still show false LOCALLY-MODIFIED, but that
+    // is the old behavior - it never gets worse than before this fix).
+    const writtenHash = (installedManifest.writtenHashes && installedManifest.writtenHashes[templateRel])
+      ? installedManifest.writtenHashes[templateRel]
+      : pkgInstalledHash;
     const targetRel = templateRelToTargetRel(templateRel);
 
     if (targetRel === null) {
@@ -181,8 +201,10 @@ export async function cmdUpdate(args) {
     const targetBuf = readFileSafe(targetAbsPath);
     const targetHash = targetBuf !== null ? sha256(targetBuf) : null;
 
+    // pkgChanged: upstream changed the template between install and now.
+    // targetChanged: user edited the installed file after init.
     const pkgChanged = pkgCurrentHash !== pkgInstalledHash;
-    const targetChanged = targetHash !== null && targetHash !== pkgInstalledHash;
+    const targetChanged = targetHash !== null && targetHash !== writtenHash;
     const targetMissing = targetHash === null;
 
     let status;
@@ -364,7 +386,12 @@ export async function cmdUpdate(args) {
   writeFileSync(manifestPath, JSON.stringify(newManifestForTarget, null, 2) + '\n', 'utf8');
 
   // -- 7. Write UPDATE-REPORT.md --
-  const constitutionActions = fileResults.filter((r) => r.isConstitution && r.status !== 'IDENTICAL');
+  // Constitution alarm fires ONLY on UPSTREAM-CHANGED or CONFLICT.
+  // LOCALLY-MODIFIED means the user edited their copy - that is expected and fine.
+  // Alarming on LOCALLY-MODIFIED was a false positive (Draft 3 Bug 3).
+  const constitutionActions = fileResults.filter(
+    (r) => r.isConstitution && ['UPSTREAM-CHANGED', 'CONFLICT'].includes(r.status)
+  );
   const now = new Date().toISOString();
 
   const reportLines = [

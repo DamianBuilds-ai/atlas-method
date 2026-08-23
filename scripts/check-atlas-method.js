@@ -365,6 +365,49 @@ if (!fs.existsSync(rootPkgPath)) {
 }
 
 // ---------------------------------------------------------------------------
+// 9. Plugin manifest version surfaces must match VERSION file.
+//    Both the Claude marketplace plugin.json and the Grok plugin.json carry a
+//    version field. These are stamped by build-manifest.js (npm run build-manifest).
+//    The gate enforces the invariant so a missed build step is caught before push.
+// ---------------------------------------------------------------------------
+
+if (version) {
+  const pluginJsonPaths = [
+    {
+      rel: 'plugins/atlas-method/.claude-plugin/plugin.json',
+      label: 'Claude plugin.json',
+    },
+    {
+      rel: 'plugins/atlas-method-grok/plugin.json',
+      label: 'Grok plugin.json',
+    },
+  ];
+
+  for (const { rel, label } of pluginJsonPaths) {
+    const absPath = path.join(REPO_ROOT, rel);
+    if (!fs.existsSync(absPath)) {
+      warn(`${label} not found - skipping version check (${rel})`);
+      continue;
+    }
+    let pluginJson;
+    try {
+      pluginJson = JSON.parse(fs.readFileSync(absPath, 'utf8'));
+    } catch (e) {
+      fail(`could not parse ${label} (${rel}): ${e.message}`);
+      continue;
+    }
+    if (pluginJson.version === version) {
+      ok(`${label} version "${pluginJson.version}" matches VERSION file`);
+    } else {
+      fail(
+        `${label} version "${pluginJson.version}" does not match VERSION file "${version}". ` +
+        'Run npm run build-manifest to stamp the correct version, then commit.'
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Summary
 // ---------------------------------------------------------------------------
 

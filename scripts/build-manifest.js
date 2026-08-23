@@ -107,3 +107,33 @@ if (!fs.existsSync(payloadDir)) {
 const manifestPath = path.join(payloadDir, 'MANIFEST.json');
 fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 console.log(`\nOK:   payload/MANIFEST.json written (version ${version}, ${Object.keys(files).length} files)`);
+
+// Stamp plugin.json version surfaces from VERSION (single source of truth).
+// These files live outside the npm package (plugins/ directory) and are not
+// hashed in the manifest, but their version field must always match VERSION.
+// The gate (check-atlas-method.js) enforces this invariant; this step repairs them.
+const pluginJsonPaths = [
+  path.join(REPO_ROOT, 'plugins', 'atlas-method', '.claude-plugin', 'plugin.json'),
+  path.join(REPO_ROOT, 'plugins', 'atlas-method-grok', 'plugin.json'),
+];
+
+for (const pluginPath of pluginJsonPaths) {
+  if (!fs.existsSync(pluginPath)) {
+    console.warn(`WARN: plugin.json not found - skipping version stamp: ${pluginPath}`);
+    continue;
+  }
+  let pluginJson;
+  try {
+    pluginJson = JSON.parse(fs.readFileSync(pluginPath, 'utf8'));
+  } catch (e) {
+    console.error(`FAIL: could not parse ${pluginPath}: ${e.message}`);
+    continue;
+  }
+  if (pluginJson.version !== version) {
+    pluginJson.version = version;
+    fs.writeFileSync(pluginPath, JSON.stringify(pluginJson, null, 2) + '\n');
+    console.log(`OK:   stamped version ${version} into ${path.relative(REPO_ROOT, pluginPath)}`);
+  } else {
+    console.log(`OK:   ${path.relative(REPO_ROOT, pluginPath)} already at ${version}`);
+  }
+}

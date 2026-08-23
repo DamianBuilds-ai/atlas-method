@@ -1,7 +1,7 @@
 {
   "name": "atlas-method-grok",
   "displayName": "Atlas Method",
-  "version": "0.1.0",
+  "version": "1.1.4",
   "description": "A lean-by-design methodology for running a personal operating system with Grok Build. Installs the Atlas constitution template, slash commands, session-start hook, and scaffold templates.",
   "author": "Damian Yazbeck",
   "homepage": "https://github.com/DamianBuilds-ai/atlas-method",

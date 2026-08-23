@@ -817,6 +817,10 @@ console.log('\n--- smoke: atlas init - scaffold into fresh dir ---');
     '.atlas/hooks/session-start.sh',
     '.atlas/method-manifest.json',
     'gazetteer.repos',
+    // baton-stub.md and WORKTREES.md: manifested in payload/MANIFEST.json and
+    // must be installed by init (Bug 2 fix - single source, no parallel lists).
+    'baton-stub.md',
+    'WORKTREES.md',
     'sessions/current/.gitkeep',
   ];
 
@@ -866,6 +870,20 @@ console.log('\n--- smoke: atlas init - scaffold into fresh dir ---');
     'init: manifest has files map',
     manifest.files && typeof manifest.files === 'object',
     'manifest.files missing or not an object'
+  );
+  // writtenHashes must be present (three-hash model: hashes of what was ACTUALLY WRITTEN,
+  // post-personalization; used by update for local-edit detection).
+  assert(
+    'init: manifest has writtenHashes map',
+    manifest.writtenHashes && typeof manifest.writtenHashes === 'object',
+    'manifest.writtenHashes missing or not an object'
+  );
+  // AGENTS.md is personalized at init - its writtenHash must DIFFER from the template hash
+  // (which lives in manifest.files). If they match, Bug 1 has regressed.
+  assert(
+    'init: AGENTS.md writtenHash differs from template hash (personalization applied)',
+    manifest.writtenHashes['templates/AGENTS.md'] !== manifest.files['templates/AGENTS.md'],
+    `AGENTS.md writtenHash matches template hash - personalization was not applied or not recorded: ${manifest.writtenHashes['templates/AGENTS.md']}`
   );
 
   // Assert generated adapter overlays exist (M1: from templates/ not root AGENTS.md)
@@ -930,41 +948,47 @@ console.log('\n--- smoke: atlas update - hand-edited file kept as locally-modifi
 
   // Init first (no git - update without git still writes the report)
   const origLog = console.log;
+  const origWarnLM = console.warn;
   console.log = () => {};
+  console.warn = () => {};
   try {
     await cmdInit(['--dir', updateTmp]);
   } finally {
     console.log = origLog;
+    console.warn = origWarnLM;
   }
 
   // Hand-edit CLAUDE.md (one of the tracked files)
   writeFileSync(join(updateTmp, 'CLAUDE.md'), '@AGENTS.md\n# hand-edited line\n');
 
-  // Now run update - should report CLAUDE.md as LOCALLY-MODIFIED, not write over it
+  // Now run update - should report CLAUDE.md as LOCALLY-MODIFIED via stdout, not overwrite it.
+  // With the three-hash fix: LOCALLY-MODIFIED-only is not "needsWork" so update returns early
+  // (stdout only, no UPDATE-REPORT.md, no branch). This is the correct no-work behavior.
   const updateLines = [];
   console.log = (...a) => updateLines.push(a.join(' '));
-  const origWarn = console.warn;
   console.warn = () => {};
   try {
     await cmdUpdate(['--dir', updateTmp]);
   } finally {
     console.log = origLog;
-    console.warn = origWarn;
+    console.warn = origWarnLM;
   }
 
-  // UPDATE-REPORT.md must exist
-  const reportPath = join(updateTmp, 'UPDATE-REPORT.md');
+  const updateOutput = updateLines.join('\n');
+
+  // update must report LOCALLY-MODIFIED via stdout for CLAUDE.md
   assert(
-    'update: UPDATE-REPORT.md written',
-    existsSync(reportPath),
-    'UPDATE-REPORT.md missing after update'
+    'update: CLAUDE.md reported as LOCALLY-MODIFIED via stdout',
+    updateOutput.includes('LOCALLY-MODIFIED') || updateOutput.includes('CLAUDE.md'),
+    `LOCALLY-MODIFIED/CLAUDE.md not found in update stdout: "${updateOutput}"`
   );
 
-  const reportContent = readFileSync(reportPath, 'utf8');
+  // No UPDATE-REPORT.md should be written for a LOCALLY-MODIFIED-only result
+  // (no upstream changes, no missing files - early return path is the correct path).
   assert(
-    'update: CLAUDE.md listed as LOCALLY-MODIFIED in report',
-    reportContent.includes('LOCALLY-MODIFIED') && reportContent.includes('CLAUDE.md'),
-    `LOCALLY-MODIFIED not found in report for CLAUDE.md: "${reportContent.slice(0, 400)}"`
+    'update: no UPDATE-REPORT.md for locally-modified-only result',
+    !existsSync(join(updateTmp, 'UPDATE-REPORT.md')),
+    'UPDATE-REPORT.md was written for a locally-modified-only update (should only write on upstream-changed/conflict/new)'
   );
 
   // CLAUDE.md must still have the hand-edit (not overwritten)
@@ -1010,7 +1034,17 @@ console.log('\n--- smoke: atlas update - upstream-changed file listed as updated
 
   const manifestPath = join(upstreamTmp, '.atlas', 'method-manifest.json');
   const mf = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  mf.files['templates/GEMINI.md'] = customHash; // record custom version as what was installed
+  // Simulate "GEMINI.md was at version customHash when installed, upstream now differs".
+  // Both files[] and writtenHashes[] must be set to customHash to model:
+  //   pkgInstalledHash = customHash (what the package contained at install time)
+  //   writtenHash      = customHash (what was written to disk - no local edit)
+  // With current targetHash = customHash (disk), update will see:
+  //   pkgChanged = pkgCurrentHash != customHash = true
+  //   targetChanged = customHash != customHash = false
+  //   => UPSTREAM-CHANGED (correct)
+  mf.files['templates/GEMINI.md'] = customHash;
+  if (!mf.writtenHashes) mf.writtenHashes = {};
+  mf.writtenHashes['templates/GEMINI.md'] = customHash;
   writeFileSync(manifestPath, JSON.stringify(mf, null, 2) + '\n');
 
   // Run update (no git repo in upstreamTmp, so no branch - report is still written)
@@ -1047,6 +1081,63 @@ console.log('\n--- smoke: atlas update - upstream-changed file listed as updated
   );
 
   rmSync(upstreamTmp, { recursive: true, force: true });
+}
+
+// ---- update: clean init -> immediate update is a TRUE NO-OP ----
+// This is the proof MUST scenario. A fresh init with zero edits followed
+// immediately by update must exit cleanly: no backfill branch, no report,
+// all files IDENTICAL (or personalized files now correctly IDENTICAL because
+// writtenHashes records post-personalization content).
+console.log('\n--- smoke: atlas update - true no-op after fresh init ---');
+{
+  const noopTmp = mkdtempSync(join(tmpdir(), 'atlas-noop-smoke-'));
+
+  const origLog = console.log;
+  const origWarnNO = console.warn;
+  console.log = () => {};
+  console.warn = () => {};
+  try {
+    await cmdInit(['--dir', noopTmp]);
+  } finally {
+    console.log = origLog;
+    console.warn = origWarnNO;
+  }
+
+  // Zero edits - run update immediately
+  const noopLines = [];
+  console.log = (...a) => noopLines.push(a.join(' '));
+  console.warn = () => {};
+  try {
+    await cmdUpdate(['--dir', noopTmp]);
+  } finally {
+    console.log = origLog;
+    console.warn = origWarnNO;
+  }
+
+  const noopOutput = noopLines.join('\n');
+
+  // No backfill branch should be mentioned
+  assert(
+    'update no-op: no backfill branch created',
+    !noopOutput.includes('atlas-method-update-'),
+    `backfill branch was created on a no-op: "${noopOutput}"`
+  );
+
+  // No UPDATE-REPORT.md should be written
+  assert(
+    'update no-op: no UPDATE-REPORT.md written',
+    !existsSync(join(noopTmp, 'UPDATE-REPORT.md')),
+    'UPDATE-REPORT.md was written on a no-op (false positive: every file should be IDENTICAL)'
+  );
+
+  // Output should confirm nothing to update
+  assert(
+    'update no-op: output confirms everything current',
+    noopOutput.includes('IDENTICAL') || noopOutput.includes('Nothing to update'),
+    `no-op did not confirm everything current: "${noopOutput}"`
+  );
+
+  rmSync(noopTmp, { recursive: true, force: true });
 }
 
 // ============================================================

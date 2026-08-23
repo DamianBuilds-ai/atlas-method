@@ -9,11 +9,28 @@
 // This invariant is enforced by both this code and the CI gate check.
 //
 // Ref: Draft 3 sections 6 (M1), 14 (distribution), 16 migration step 4.
+//
+// THREE-HASH MODEL (installed manifest schema):
+//   files[rel]        = sha256 of the raw template file in the package (unchanged
+//                       from payload/MANIFEST.json). Used by update to detect
+//                       upstream changes between versions: if the package now
+//                       carries a different hash than what was recorded at install,
+//                       the template changed upstream.
+//   writtenHashes[rel]= sha256 of what was ACTUALLY WRITTEN to the target.
+//                       For non-personalized files this equals files[rel].
+//                       For personalized files (AGENTS.md, gazetteer.repos) the
+//                       substitution changes the content so writtenHashes != files.
+//                       update uses writtenHashes to detect local edits:
+//                       if target hash != writtenHash, the user edited the file.
+//
+// The file list installed is derived from payload/MANIFEST.json (single source).
+// Every file in the manifest is installed so the manifest and init can never drift.
 
-import { mkdirSync, writeFileSync, existsSync, readFileSync, copyFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 const thisDir = dirname(fileURLToPath(import.meta.url));
 // Repo root is one level up from cli/
@@ -57,8 +74,28 @@ What gets scaffolded:
   .codex/agents/               Generated runner overlays (Codex)
   .gemini/adapters.md          Generated runner overlays (Gemini)
   gazetteer.repos              Gazetteer manifest (edit paths for your setup)
+  baton-stub.md                Baton template (used by session-start hook)
+  WORKTREES.md                 Worktree registry template
   sessions/current/            Empty baton directory
 `.trim();
+
+function sha256(content) {
+  // content may be string or Buffer
+  return createHash('sha256').update(content).digest('hex');
+}
+
+// Map a manifest key (e.g. "templates/hooks/datetime.sh") to its target-relative path.
+// Returns null for files that are not directly installed (e.g. adapters/jobs.json).
+function templateRelToTargetRel(templateRel) {
+  if (templateRel === 'adapters/jobs.json') return null;
+  if (templateRel.startsWith('templates/hooks/')) {
+    return '.atlas/hooks/' + templateRel.slice('templates/hooks/'.length);
+  }
+  if (templateRel.startsWith('templates/')) {
+    return templateRel.slice('templates/'.length);
+  }
+  return null;
+}
 
 export async function cmdInit(args) {
   if (args.includes('--help') || args.includes('-h')) {
@@ -125,61 +162,116 @@ export async function cmdInit(args) {
 
   const methodVersion = manifest ? manifest.methodVersion : 'unknown';
 
-  // Track what we skip (existing files) and what we write
+  // Track what we skip (existing files) and what we write.
+  // writtenHashes maps manifest key -> sha256 of what was actually written.
   const skipped = [];
   const written = [];
+  const writtenHashes = {}; // key = manifest templateRel, value = sha256 of written content
 
-  function writeFile(relPath, content, opts = {}) {
+  // writeFile: write content to target, return the content actually written (or null if skipped).
+  function writeFile(relPath, content) {
     const absPath = join(targetDir, relPath);
     const parentDir = dirname(absPath);
     mkdirSync(parentDir, { recursive: true });
 
     if (existsSync(absPath) && !force) {
       skipped.push(relPath);
-      return;
+      return null;
     }
     if (typeof content === 'string') {
       writeFileSync(absPath, content, 'utf8');
     } else {
-      // Buffer
       writeFileSync(absPath, content);
     }
     written.push(relPath);
+    return content;
   }
 
-  function copyTemplate(templateRelPath, targetRelPath) {
-    const src = join(TEMPLATES_DIR, templateRelPath);
-    if (!existsSync(src)) {
-      console.warn(`WARN: template file missing: ${templateRelPath} - skipping`);
-      return;
+  // -- Install all template files from MANIFEST.json (single source of truth) --
+  // This ensures every manifested file is installed and the two lists cannot drift.
+  if (manifest && manifest.files) {
+    for (const [templateRel, pkgHash] of Object.entries(manifest.files)) {
+      const targetRel = templateRelToTargetRel(templateRel);
+      if (targetRel === null) {
+        // Not directly installed (adapters/jobs.json is used for generation below)
+        continue;
+      }
+
+      // Determine source path within templates/
+      const srcPath = templateRel.startsWith('templates/')
+        ? join(TEMPLATES_DIR, templateRel.slice('templates/'.length))
+        : null;
+
+      if (!srcPath || !existsSync(srcPath)) {
+        console.warn(`WARN: template file missing: ${templateRel} - skipping`);
+        continue;
+      }
+
+      let content = readFileSync(srcPath, 'utf8');
+
+      // Apply per-file personalizations.
+      if (templateRel === 'templates/AGENTS.md') {
+        content = content
+          .replace(/\{\{PROJECT_NAME\}\}/g, projectName)
+          .replace(/\{\{DOMAIN\}\}/g, projectName)
+          .replace(/\{\{AM_VERSION\}\}/g, methodVersion);
+      } else if (templateRel === 'templates/gazetteer.repos') {
+        content = content.replace('REPLACE_WITH_ABSOLUTE_PATH_TO_atlas-method', targetDir);
+      }
+
+      const written_content = writeFile(targetRel, content);
+      // Record the hash of what was WRITTEN (post-substitution), not the template hash.
+      // For non-personalized files these are identical; for personalized files they differ.
+      // cmd-update.js uses writtenHashes for local-edit detection.
+      if (written_content !== null) {
+        writtenHashes[templateRel] = sha256(
+          typeof written_content === 'string' ? Buffer.from(written_content, 'utf8') : written_content
+        );
+      } else {
+        // File was skipped (already exists). Record the template hash so update can
+        // still detect local edits relative to what the template would have written.
+        // This is a best-effort approximation for --force-skipped files only.
+        writtenHashes[templateRel] = pkgHash;
+      }
     }
-    const content = readFileSync(src, 'utf8');
-    writeFile(targetRelPath, content);
+  } else {
+    // No manifest - fall back to explicit file list (graceful degradation)
+    console.warn('WARN: no manifest, using fallback file list - some files may be skipped');
+
+    // AGENTS.md (personalized)
+    {
+      let content = templateAgentsContent
+        .replace(/\{\{PROJECT_NAME\}\}/g, projectName)
+        .replace(/\{\{DOMAIN\}\}/g, projectName)
+        .replace(/\{\{AM_VERSION\}\}/g, methodVersion);
+      writeFile('AGENTS.md', content);
+    }
+
+    // Remaining non-personalized templates
+    for (const [tmplRel, tgtRel] of [
+      ['CLAUDE.md', 'CLAUDE.md'],
+      ['GEMINI.md', 'GEMINI.md'],
+      ['.gemini/settings.json', '.gemini/settings.json'],
+      ['hooks/datetime.sh', '.atlas/hooks/datetime.sh'],
+      ['hooks/session-start.sh', '.atlas/hooks/session-start.sh'],
+      ['hooks/README.md', '.atlas/hooks/README.md'],
+      ['baton-stub.md', 'baton-stub.md'],
+      ['WORKTREES.md', 'WORKTREES.md'],
+    ]) {
+      const src = join(TEMPLATES_DIR, tmplRel);
+      if (existsSync(src)) writeFile(tgtRel, readFileSync(src, 'utf8'));
+    }
+
+    // gazetteer.repos (personalized)
+    {
+      const src = join(TEMPLATES_DIR, 'gazetteer.repos');
+      if (existsSync(src)) {
+        const content = readFileSync(src, 'utf8')
+          .replace('REPLACE_WITH_ABSOLUTE_PATH_TO_atlas-method', targetDir);
+        writeFile('gazetteer.repos', content);
+      }
+    }
   }
-
-  // -- 1. AGENTS.md (personalized) --
-  {
-    let agentsContent = templateAgentsContent
-      .replace(/\{\{PROJECT_NAME\}\}/g, projectName)
-      .replace(/\{\{DOMAIN\}\}/g, projectName)
-      .replace(/\{\{AM_VERSION\}\}/g, methodVersion);
-
-    writeFile('AGENTS.md', agentsContent);
-  }
-
-  // -- 2. CLAUDE.md (one-line shell) --
-  copyTemplate('CLAUDE.md', 'CLAUDE.md');
-
-  // -- 3. GEMINI.md (one-line shell) --
-  copyTemplate('GEMINI.md', 'GEMINI.md');
-
-  // -- 4. .gemini/settings.json --
-  copyTemplate('.gemini/settings.json', '.gemini/settings.json');
-
-  // -- 5. Hooks --
-  copyTemplate('hooks/datetime.sh', '.atlas/hooks/datetime.sh');
-  copyTemplate('hooks/session-start.sh', '.atlas/hooks/session-start.sh');
-  copyTemplate('hooks/README.md', '.atlas/hooks/README.md');
 
   // Make hooks executable (best-effort)
   try {
@@ -194,17 +286,7 @@ export async function cmdInit(args) {
     console.warn(`WARN: could not chmod hooks: ${e.message}`);
   }
 
-  // -- 6. gazetteer.repos (path substituted) --
-  {
-    const src = join(TEMPLATES_DIR, 'gazetteer.repos');
-    if (existsSync(src)) {
-      const content = readFileSync(src, 'utf8')
-        .replace('REPLACE_WITH_ABSOLUTE_PATH_TO_atlas-method', targetDir);
-      writeFile('gazetteer.repos', content);
-    }
-  }
-
-  // -- 7. sessions/current/ skeleton --
+  // -- sessions/current/ skeleton --
   {
     const sessionsDir = join(targetDir, 'sessions', 'current');
     if (!existsSync(sessionsDir)) {
@@ -214,30 +296,21 @@ export async function cmdInit(args) {
     }
   }
 
-  // -- 8. Generated adapters --
+  // -- Generated adapters --
   // Import and invoke the adapter generator against the target directory.
-  // Adapter generator reads adapters/jobs.json from REPO_ROOT (the package root),
-  // and writes into TARGET/.claude/agents/, TARGET/.grok/agents/, etc.
   try {
     const { cmdAdapters } = await import('./cmd-adapters.js');
-    // The generator needs a root that has the adapters/ folder and templates/ stubs.
-    // We generate into a temp location and copy into target.
-    // Simpler: the generator accepts --root and writes into that root's templates/ tree.
-    // For init we want files in the target root's runner dirs directly.
-    // Generate into a temp dir, then relocate:
     const { mkdtempSync, rmSync, readdirSync, statSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');
     const genTmp = mkdtempSync(join(tmpdir(), 'atlas-init-adapters-'));
     const genRoot = join(genTmp, 'root');
     mkdirSync(join(genRoot, 'adapters'), { recursive: true });
     mkdirSync(join(genRoot, 'templates', '.gemini'), { recursive: true });
-    // Copy jobs.json into the temp root
     const jobsSrc = join(ADAPTERS_DIR, 'jobs.json');
     if (existsSync(jobsSrc)) {
       writeFileSync(join(genRoot, 'adapters', 'jobs.json'), readFileSync(jobsSrc));
     }
 
-    // Suppress generator output during init
     const origLog = console.log;
     console.log = () => {};
     try {
@@ -246,7 +319,6 @@ export async function cmdInit(args) {
       console.log = origLog;
     }
 
-    // Copy generated files from genRoot/templates/ into target
     function copyDir(src, destPrefix, relBase) {
       if (!existsSync(src)) return;
       const entries = readdirSync(src);
@@ -273,16 +345,20 @@ export async function cmdInit(args) {
     console.warn(`WARN: adapter generation failed: ${e.message} - you can run "atlas adapters generate" manually`);
   }
 
-  // -- 9. .atlas/method-manifest.json (version stamp) --
+  // -- .atlas/method-manifest.json (version stamp + three-hash data) --
   if (manifest) {
     const targetManifest = {
       ...manifest,
       installedAt: new Date().toISOString(),
       targetDir,
       profile,
+      // writtenHashes: sha256 of what was ACTUALLY WRITTEN to disk (post-personalization).
+      // cmd-update uses these for local-edit detection (target hash vs written hash).
+      // files[] retains the package template hashes for upstream-change detection.
+      // See THREE-HASH MODEL comment at top of file.
+      writtenHashes,
     };
     const manifestStr = JSON.stringify(targetManifest, null, 2) + '\n';
-    // Always write (force applies to payload files; manifest is generated, always fresh)
     const manifestPath = join(targetDir, '.atlas', 'method-manifest.json');
     mkdirSync(dirname(manifestPath), { recursive: true });
     writeFileSync(manifestPath, manifestStr, 'utf8');

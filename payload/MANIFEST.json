@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "methodVersion": "1.1.4",
-  "builtAt": "2026-08-22T23:02:52.412Z",
+  "builtAt": "2026-08-23T00:12:14.508Z",
   "files": {
     "templates/AGENTS.md": "d194bf74f7902754b9bf07d8136c178cbe0aeda663b524e39d27d5f46020d9fc",
     "templates/CLAUDE.md": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
     "templates/GEMINI.md": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
     "templates/.gemini/settings.json": "73585577a3e0a4cf0153e59177edf6ac8910f27e8eadeb7ce2893de4f6eca7f1",
     "templates/hooks/datetime.sh": "87a16692c2de5fe4dcdaef90a37999c0091cac22c0bdd18bf8c70f7eaa80de0a",
-    "templates/hooks/session-start.sh": "511be7d7dfdb2116c31bd8ec43a5e662e4f806c16b9d976e4b8f37d6f7d4f460",
+    "templates/hooks/session-start.sh": "20a992fc78bde17370d90a29113c4d288b045b3e8115f3ff9bde7cd087203687",
     "templates/gazetteer.repos": "18a7059738324b8a680f185242d05c990d3da951ff7aeeeb60d169a675739a8a",
     "templates/baton-stub.md": "db6b38777db46c50966620ee72cb93814f9dabe06e4923ed0201d2fcb798dd01",
     "templates/WORKTREES.md": "0450f0a7d43ae26d50114dbd42267ab3a6f0778e401fec1a350ab03b84dc62dc",
