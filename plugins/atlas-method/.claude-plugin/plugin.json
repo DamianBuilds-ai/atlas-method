@@ -1,7 +1,7 @@
 {
   "name": "atlas-method",
   "displayName": "Atlas Method",
-  "version": "0.1.0",
+  "version": "1.1.4",
   "description": "A lean-by-design methodology for running a personal operating system on Claude Code. Ships /atlas self-audit, /newbot domain scaffolder, four lifecycle hooks, and an init skill that copies starter files into your project without overwriting anything you own.",
   "author": {
     "name": "Damian Yazbeck",

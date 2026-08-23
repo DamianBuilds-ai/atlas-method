@@ -1,0 +1,33 @@
+{
+  "name": "atlas-method",
+  "version": "1.1.4",
+  "description": "Atlas Method - multi-runner AI session method (constitution template, installer, adapters)",
+  "license": "MIT",
+  "bin": {
+    "atlas": "./bin/atlas.js"
+  },
+  "scripts": {
+    "build-manifest": "node scripts/build-manifest.js",
+    "gate": "node scripts/check-atlas-method.js",
+    "smoke": "node --experimental-sqlite --no-warnings test/smoke.js",
+    "test": "npm run gate && npm run smoke"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "keywords": ["atlas-method", "ai-session", "multi-runner", "agents", "personal-os"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DamianBuilds-ai/atlas-method.git"
+  },
+  "files": [
+    "bin/",
+    "cli/",
+    "templates/",
+    "adapters/",
+    "payload/",
+    "scripts/",
+    "VERSION",
+    "LICENSE"
+  ]
+}
