@@ -54,6 +54,21 @@ const MANIFEST_PAYLOAD = [
   'templates/WORKTREES.md',
   'templates/scripts/worktree-gc.sh',
   'adapters/jobs.json',
+  // CLI files - installed project-locally under .atlas/cli/ in adopter targets.
+  // Tracking these means atlas update can refresh the CLI when the method ships
+  // a new version. Decision: yes, track - updates must refresh the CLI too.
+  // cmd-init.js maps cli/X -> .atlas/cli/X via templateRelToTargetRel().
+  'cli/atlas-launch.sh',
+  'cli/atlas.js',
+  'cli/cmd-adapters.js',
+  'cli/cmd-index.js',
+  'cli/cmd-init.js',
+  'cli/cmd-orientation.js',
+  'cli/cmd-refresh.js',
+  'cli/cmd-search.js',
+  'cli/cmd-update.js',
+  'cli/db.js',
+  'cli/gazetteer.js',
 ];
 
 function sha256(content) {

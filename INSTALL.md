@@ -63,7 +63,7 @@ yours locally.
 
 **npx door**
 - `npx github:DamianBuilds-ai/atlas-method init` is the live universal door as of v1.1.4.
-- Requires Node >= 22 and git. No global install needed.
+- Requires Node >= 22 and git. Init installs the atlas CLI project-locally under `.atlas/bin/atlas` in the target repo, so no global install is needed after that. The hook and `atlas` commands all resolve to this project-local copy.
 - For purely-local mode (no GitHub integration): `npx github:DamianBuilds-ai/atlas-method init --profile local`
 - To scaffold into a specific directory: `npx github:DamianBuilds-ai/atlas-method init --dir /path/to/repo`
 - To update an existing install: `npx github:DamianBuilds-ai/atlas-method update --dir /path/to/repo`

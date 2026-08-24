@@ -72,9 +72,19 @@ resolve_domain() {
 }
 
 atlas_cmd() {
-    # Resolve the atlas launcher: prefer atlas-launch.sh in cwd/cli, then atlas on PATH.
-    if [ -f "cli/atlas-launch.sh" ]; then
+    # Resolve the atlas launcher in priority order:
+    #   1. Project-local shim installed by atlas init (.atlas/bin/atlas)
+    #      This is the normal path for adopters - init copies the CLI here.
+    #   2. Method-repo dev layout (cli/atlas-launch.sh - only present when
+    #      running inside the atlas-method repo itself during development)
+    #   3. npm-local install (node_modules/.bin/atlas)
+    #   4. PATH atlas (global install)
+    if [ -x ".atlas/bin/atlas" ]; then
+        printf '%s' ".atlas/bin/atlas"
+    elif [ -f "cli/atlas-launch.sh" ]; then
         printf '%s' "sh cli/atlas-launch.sh"
+    elif [ -f "node_modules/.bin/atlas" ]; then
+        printf '%s' "node_modules/.bin/atlas"
     elif command -v atlas >/dev/null 2>&1; then
         printf '%s' "atlas"
     else
@@ -111,7 +121,7 @@ fi
 refresh_step() {
     atlas=$(atlas_cmd)
     if [ -z "$atlas" ]; then
-        notice "atlas not found - skipping refresh (install atlas or add cli/ to PATH)"
+        notice "atlas not found - skipping refresh (.atlas/bin/atlas missing; re-run atlas init or install atlas globally)"
         return
     fi
     if ! command -v gh >/dev/null 2>&1; then

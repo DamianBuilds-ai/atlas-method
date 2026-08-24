@@ -94,7 +94,51 @@ function templateRelToTargetRel(templateRel) {
   if (templateRel.startsWith('templates/')) {
     return templateRel.slice('templates/'.length);
   }
+  // CLI files are copied project-locally so the hook can invoke them without
+  // a global atlas install. cli/X in the method repo -> .atlas/cli/X in targets.
+  if (templateRel.startsWith('cli/')) {
+    return '.atlas/cli/' + templateRel.slice('cli/'.length);
+  }
   return null;
+}
+
+/**
+ * Build the personalized gazetteer.repos content for a target directory.
+ *
+ * The template defaults are for the atlas-method repo itself (visibility=public,
+ * remote=atlas-method URL). Adopters are always private by default (Draft 3 s.10).
+ * Init substitutes:
+ *   path       - the actual targetDir (absolute)
+ *   remote     - git remote get-url origin in targetDir, if present; else omitted
+ *   visibility - "private" always for adopter targets
+ *                (the method repo is the only public entry, and it self-inits via
+ *                 dev workflow, not via npx)
+ */
+function buildGazetteerContent(templateContent, targetDir) {
+  // Resolve the git remote for targetDir (best-effort; empty string if absent/error).
+  let gitRemote = '';
+  try {
+    gitRemote = execSync('git remote get-url origin', {
+      cwd: targetDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch { /* no remote or git not available - leave empty */ }
+
+  // Build the target-specific repos entry.
+  const entry = { path: targetDir, visibility: 'private' };
+  if (gitRemote) entry.remote = gitRemote;
+
+  // Rebuild the file: pass through comment and header lines unchanged;
+  // replace the line containing a "path" field (the repos entry).
+  const lines = templateContent.split('\n');
+  const newLines = lines.map((line) => {
+    if (line.startsWith('{') && line.includes('"path"')) {
+      return JSON.stringify(entry);
+    }
+    return line;
+  });
+  return newLines.join('\n');
 }
 
 export async function cmdInit(args) {
@@ -107,12 +151,15 @@ export async function cmdInit(args) {
   let profile = 'github';
   let targetDir = process.cwd();
   let force = false;
+  let domainFlag = '';  // empty = derive from directory name
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--profile' && args[i + 1]) {
       profile = args[++i];
     } else if (args[i] === '--dir' && args[i + 1]) {
       targetDir = resolve(args[++i]);
+    } else if (args[i] === '--domain' && args[i + 1]) {
+      domainFlag = args[++i];
     } else if (args[i] === '--force') {
       force = true;
     }
@@ -147,6 +194,15 @@ export async function cmdInit(args) {
 
   // Derive project name from target directory basename
   const projectName = resolve(targetDir).split('/').pop() || 'my-project';
+
+  // Domain slug: --domain flag if given, else directory basename.
+  // Written to .atlas/domain so the hook resolver and AGENTS.md always agree.
+  const domainSlug = domainFlag || projectName;
+  if (!domainFlag) {
+    console.log(`  domain: ${domainSlug} (default from directory name; use --domain to override)`);
+  } else {
+    console.log(`  domain: ${domainSlug}`);
+  }
 
   // Load manifest
   let manifest = null;
@@ -197,10 +253,12 @@ export async function cmdInit(args) {
         continue;
       }
 
-      // Determine source path within templates/
+      // Determine source path. Templates live under templates/; CLI files live under cli/ at repo root.
       const srcPath = templateRel.startsWith('templates/')
         ? join(TEMPLATES_DIR, templateRel.slice('templates/'.length))
-        : null;
+        : templateRel.startsWith('cli/')
+          ? join(REPO_ROOT, templateRel)
+          : null;
 
       if (!srcPath || !existsSync(srcPath)) {
         console.warn(`WARN: template file missing: ${templateRel} - skipping`);
@@ -213,10 +271,10 @@ export async function cmdInit(args) {
       if (templateRel === 'templates/AGENTS.md') {
         content = content
           .replace(/\{\{PROJECT_NAME\}\}/g, projectName)
-          .replace(/\{\{DOMAIN\}\}/g, projectName)
+          .replace(/\{\{DOMAIN\}\}/g, domainSlug)
           .replace(/\{\{AM_VERSION\}\}/g, methodVersion);
       } else if (templateRel === 'templates/gazetteer.repos') {
-        content = content.replace('REPLACE_WITH_ABSOLUTE_PATH_TO_atlas-method', targetDir);
+        content = buildGazetteerContent(content, targetDir);
       }
 
       const written_content = writeFile(targetRel, content);
@@ -242,7 +300,7 @@ export async function cmdInit(args) {
     {
       let content = templateAgentsContent
         .replace(/\{\{PROJECT_NAME\}\}/g, projectName)
-        .replace(/\{\{DOMAIN\}\}/g, projectName)
+        .replace(/\{\{DOMAIN\}\}/g, domainSlug)
         .replace(/\{\{AM_VERSION\}\}/g, methodVersion);
       writeFile('AGENTS.md', content);
     }
@@ -266,8 +324,7 @@ export async function cmdInit(args) {
     {
       const src = join(TEMPLATES_DIR, 'gazetteer.repos');
       if (existsSync(src)) {
-        const content = readFileSync(src, 'utf8')
-          .replace('REPLACE_WITH_ABSOLUTE_PATH_TO_atlas-method', targetDir);
+        const content = buildGazetteerContent(readFileSync(src, 'utf8'), targetDir);
         writeFile('gazetteer.repos', content);
       }
     }
@@ -321,6 +378,43 @@ export async function cmdInit(args) {
         written.push('.gitignore');
       }
     }
+  }
+
+  // -- .atlas/domain (domain slug for hook resolver and AGENTS.md alignment) --
+  // Written unconditionally: the session-start hook reads this file to determine
+  // the active domain. AGENTS.md uses the same domainSlug, so both agree.
+  {
+    const domainFilePath = join(targetDir, '.atlas', 'domain');
+    mkdirSync(dirname(domainFilePath), { recursive: true });
+    writeFileSync(domainFilePath, domainSlug + '\n', 'utf8');
+    written.push('.atlas/domain');
+  }
+
+  // -- Project-local CLI shim (.atlas/bin/atlas -> .atlas/cli/) --
+  // The session-start hook calls atlas_cmd() which checks .atlas/bin/atlas first.
+  // Having a project-local CLI means the hook works without a global atlas install
+  // or any PATH manipulation. Draft 3 s.14: adopters read local installed files,
+  // never the public repo at runtime. This satisfies that invariant.
+  //
+  // The CLI files themselves are copied via the manifest loop above (cli/* -> .atlas/cli/*).
+  // The shim is a small generated shell script that is NOT in the manifest (generated
+  // artifact, same as .atlas/method-manifest.json itself).
+  {
+    const shimDir = join(targetDir, '.atlas', 'bin');
+    mkdirSync(shimDir, { recursive: true });
+    const shimPath = join(shimDir, 'atlas');
+    const shimContent = [
+      '#!/bin/sh',
+      '# Atlas Method project-local CLI shim.',
+      '# Installed by atlas init into .atlas/bin/. Re-run atlas init --force to reinstall.',
+      '# Delegates to .atlas/cli/atlas-launch.sh which invokes .atlas/cli/atlas.js (ESM main).',
+      'SHIM_DIR="$(cd "$(dirname "$0")" && pwd)"',
+      'exec sh "${SHIM_DIR}/../cli/atlas-launch.sh" "$@"',
+    ].join('\n') + '\n';
+    writeFileSync(shimPath, shimContent, 'utf8');
+    // Make executable so atlas_cmd() can check [ -x ".atlas/bin/atlas" ]
+    execSync(`chmod +x "${shimPath}"`);
+    written.push('.atlas/bin/atlas');
   }
 
   // -- Generated adapters --
