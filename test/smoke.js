@@ -1326,6 +1326,90 @@ console.log('\n--- smoke: atlas update - upstream-changed file listed as updated
   rmSync(upstreamTmp, { recursive: true, force: true });
 }
 
+// ---- update: upstream CLI file change propagates into .atlas/cli/ via backfill ----
+// Regression guard for #53 SHOULD: templateRelToTargetRel in cmd-update.js was missing
+// the cli/ -> .atlas/cli/ mapping, so upstream CLI changes were misclassified as
+// ADAPTERS-SCHEMA-CHANGED (targetRel=null path) and never copied into .atlas/cli/.
+console.log('\n--- smoke: atlas update - upstream CLI file propagates into .atlas/cli/ ---');
+{
+  const cliTmp = mkdtempSync(join(tmpdir(), 'atlas-cli-update-smoke-'));
+
+  // Init first
+  const origLogCli = console.log;
+  const origWarnCli = console.warn;
+  console.log = () => {};
+  console.warn = () => {};
+  try {
+    await cmdInit(['--dir', cliTmp]);
+  } finally {
+    console.log = origLogCli;
+    console.warn = origWarnCli;
+  }
+
+  // Confirm .atlas/cli/atlas.js exists after init (baseline)
+  assert(
+    'cli-update: .atlas/cli/atlas.js present after init',
+    existsSync(join(cliTmp, '.atlas', 'cli', 'atlas.js')),
+    '.atlas/cli/atlas.js missing after init'
+  );
+
+  // Simulate "upstream shipped a new cli/atlas.js" by:
+  //   1. Writing a sentinel string to .atlas/cli/atlas.js (hash B)
+  //   2. Setting method-manifest.json files['cli/atlas.js'] = B and writtenHashes['cli/atlas.js'] = B
+  // When update runs:
+  //   pkgCurrentHash = A (real package hash, the file we just changed above)
+  //   pkgInstalledHash = B (what manifest says was installed)
+  //   targetHash = B (what is on disk)
+  //   => pkgChanged=true, targetChanged=false => UPSTREAM-CHANGED
+  // Expected: update copies A into .atlas/cli/atlas.js (sentinel gone).
+  const { createHash: cliHash } = await import('node:crypto');
+  const sentinelContent = '// sentinel-old-cli-version\n';
+  writeFileSync(join(cliTmp, '.atlas', 'cli', 'atlas.js'), sentinelContent);
+  const sentinelHash = cliHash('sha256').update(sentinelContent).digest('hex');
+
+  const cliManifestPath = join(cliTmp, '.atlas', 'method-manifest.json');
+  const cliMf = JSON.parse(readFileSync(cliManifestPath, 'utf8'));
+  cliMf.files['cli/atlas.js'] = sentinelHash;
+  if (!cliMf.writtenHashes) cliMf.writtenHashes = {};
+  cliMf.writtenHashes['cli/atlas.js'] = sentinelHash;
+  writeFileSync(cliManifestPath, JSON.stringify(cliMf, null, 2) + '\n');
+
+  // Run update
+  console.log = () => {};
+  console.warn = () => {};
+  try {
+    await cmdUpdate(['--dir', cliTmp]);
+  } finally {
+    console.log = origLogCli;
+    console.warn = origWarnCli;
+  }
+
+  // .atlas/cli/atlas.js must now contain the current package version (sentinel gone)
+  const atlasJsAfter = readFileSync(join(cliTmp, '.atlas', 'cli', 'atlas.js'), 'utf8');
+  assert(
+    'cli-update: sentinel removed from .atlas/cli/atlas.js (upstream CLI applied)',
+    !atlasJsAfter.includes('sentinel-old-cli-version'),
+    `sentinel still present in .atlas/cli/atlas.js - cli/ mapping missing from templateRelToTargetRel: "${atlasJsAfter.slice(0, 200)}"`
+  );
+
+  // UPDATE-REPORT.md must be present (upstream change -> report written)
+  assert(
+    'cli-update: UPDATE-REPORT.md written after upstream CLI change',
+    existsSync(join(cliTmp, 'UPDATE-REPORT.md')),
+    'UPDATE-REPORT.md missing after upstream CLI file change'
+  );
+
+  // Report must mention UPSTREAM-CHANGED, not ADAPTERS-SCHEMA-CHANGED
+  const cliReport = readFileSync(join(cliTmp, 'UPDATE-REPORT.md'), 'utf8');
+  assert(
+    'cli-update: report shows UPSTREAM-CHANGED (not misclassified as ADAPTERS-SCHEMA-CHANGED)',
+    cliReport.includes('UPSTREAM-CHANGED') && !cliReport.includes('ADAPTERS-SCHEMA-CHANGED'),
+    `report classification wrong: "${cliReport.slice(0, 500)}"`
+  );
+
+  rmSync(cliTmp, { recursive: true, force: true });
+}
+
 // ---- update: clean init -> immediate update is a TRUE NO-OP ----
 // This is the proof MUST scenario. A fresh init with zero edits followed
 // immediately by update must exit cleanly: no backfill branch, no report,

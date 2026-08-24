@@ -31,6 +31,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { templateRelToTargetRel } from './install-utils.js';
 
 const thisDir = dirname(fileURLToPath(import.meta.url));
 // Repo root is one level up from cli/
@@ -82,24 +83,6 @@ What gets scaffolded:
 function sha256(content) {
   // content may be string or Buffer
   return createHash('sha256').update(content).digest('hex');
-}
-
-// Map a manifest key (e.g. "templates/hooks/datetime.sh") to its target-relative path.
-// Returns null for files that are not directly installed (e.g. adapters/jobs.json).
-function templateRelToTargetRel(templateRel) {
-  if (templateRel === 'adapters/jobs.json') return null;
-  if (templateRel.startsWith('templates/hooks/')) {
-    return '.atlas/hooks/' + templateRel.slice('templates/hooks/'.length);
-  }
-  if (templateRel.startsWith('templates/')) {
-    return templateRel.slice('templates/'.length);
-  }
-  // CLI files are copied project-locally so the hook can invoke them without
-  // a global atlas install. cli/X in the method repo -> .atlas/cli/X in targets.
-  if (templateRel.startsWith('cli/')) {
-    return '.atlas/cli/' + templateRel.slice('cli/'.length);
-  }
-  return null;
 }
 
 /**
