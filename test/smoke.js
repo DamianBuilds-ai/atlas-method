@@ -993,6 +993,160 @@ console.log('\n--- smoke: atlas init - scaffold into fresh dir ---');
   rmSync(initTmp, { recursive: true, force: true });
 }
 
+// ---- MUST 1: project-local CLI shim present + hook writes orientation with atlas stripped from PATH ----
+// Proof demand: after init, running session-start.sh with atlas absent from PATH must write
+// sessions/current/orientation-<domain>.md (not skip it).
+console.log('\n--- smoke: MUST 1 - project-local CLI shim + hook writes orientation sans global atlas ---');
+{
+  const mustTmp = mkdtempSync(join(tmpdir(), 'atlas-must1-smoke-'));
+
+  const origLog = console.log;
+  console.log = () => {};
+  try {
+    await cmdInit(['--profile', 'github', '--dir', mustTmp, '--domain', 'smoke-domain']);
+  } finally {
+    console.log = origLog;
+  }
+
+  // MUST 1a: .atlas/bin/atlas shim must exist and be executable
+  const shimPath = join(mustTmp, '.atlas', 'bin', 'atlas');
+  assert('MUST1: .atlas/bin/atlas shim exists', existsSync(shimPath), '.atlas/bin/atlas missing after init');
+  if (existsSync(shimPath)) {
+    // Check executable bit
+    const { statSync } = await import('node:fs');
+    const shimStat = statSync(shimPath);
+    const isExec = (shimStat.mode & 0o100) !== 0;
+    assert('MUST1: .atlas/bin/atlas shim is executable', isExec, `mode: ${shimStat.mode.toString(8)}`);
+  }
+
+  // MUST 1b: .atlas/cli/ directory must contain atlas.js and atlas-launch.sh
+  assert('MUST1: .atlas/cli/atlas.js present', existsSync(join(mustTmp, '.atlas', 'cli', 'atlas.js')), '.atlas/cli/atlas.js missing');
+  assert('MUST1: .atlas/cli/atlas-launch.sh present', existsSync(join(mustTmp, '.atlas', 'cli', 'atlas-launch.sh')), '.atlas/cli/atlas-launch.sh missing');
+
+  // MUST 1c: run session-start.sh with atlas stripped from PATH - orientation file must be written.
+  // This is the proof-seat demand: the hook must NOT skip orientation when atlas is absent from PATH.
+  const hookPath = join(mustTmp, '.atlas', 'hooks', 'session-start.sh');
+  const orientPath = join(mustTmp, 'sessions', 'current', 'orientation-smoke-domain.md');
+  // Strip PATH to minimal (node + sh only) by providing only the directory containing node.
+  const nodeDir = process.execPath.replace(/\/node$/, '');
+  const minimalPath = nodeDir + ':/usr/bin:/bin';
+
+  let hookOutput = '';
+  let hookExitCode = null;
+  try {
+    hookOutput = smokeExec(
+      `sh "${hookPath}"`,
+      {
+        cwd: mustTmp,
+        env: { ...process.env, PATH: minimalPath, ATLAS_DOMAIN: 'smoke-domain' },
+        stdio: 'pipe',
+        encoding: 'utf8',
+        input: '',
+      }
+    ).toString();
+    hookExitCode = 0;
+  } catch (e) {
+    hookOutput = (e.stderr || '') + (e.stdout || '');
+    hookExitCode = e.status || 1;
+  }
+
+  assert('MUST1: hook exits 0 with atlas off PATH', hookExitCode === 0, `exit ${hookExitCode}; output: ${hookOutput.slice(0, 400)}`);
+  assert(
+    'MUST1: orientation file written (not skipped) with atlas off PATH',
+    existsSync(orientPath),
+    `orientation-smoke-domain.md missing; hook output: ${hookOutput.slice(0, 400)}`
+  );
+  // Refresh step should emit a visible notice (attempted or visibly skipped - either is correct)
+  const hasRefreshNotice = hookOutput.includes('refresh') || hookOutput.includes('gh not found') || hookOutput.includes('unauthenticated');
+  assert('MUST1: refresh step emits a visible notice', hasRefreshNotice, `hook output: ${hookOutput.slice(0, 400)}`);
+
+  rmSync(mustTmp, { recursive: true, force: true });
+}
+
+// ---- MUST 2: gazetteer.repos gets target-true remote + visibility=private ----
+// Proof demand: init into a fixture with a fake origin produces that origin + private.
+console.log('\n--- smoke: MUST 2 - gazetteer.repos has correct remote + visibility=private ---');
+{
+  const must2Tmp = mkdtempSync(join(tmpdir(), 'atlas-must2-smoke-'));
+  // Init a real git repo so git remote get-url origin has something to return.
+  smokeExec('git init', { cwd: must2Tmp });
+  smokeExec('git remote add origin https://github.com/example-org/example-repo.git', { cwd: must2Tmp });
+
+  const origLog = console.log;
+  console.log = () => {};
+  try {
+    await cmdInit(['--profile', 'github', '--dir', must2Tmp]);
+  } finally {
+    console.log = origLog;
+  }
+
+  const gazetteerPath = join(must2Tmp, 'gazetteer.repos');
+  assert('MUST2: gazetteer.repos exists', existsSync(gazetteerPath), 'gazetteer.repos missing');
+  if (existsSync(gazetteerPath)) {
+    const lines = readFileSync(gazetteerPath, 'utf8').split('\n').filter(l => l.startsWith('{') && l.includes('"path"'));
+    assert('MUST2: gazetteer has one repos entry', lines.length === 1, `got ${lines.length} entry lines`);
+    if (lines.length > 0) {
+      let entry;
+      try { entry = JSON.parse(lines[0]); } catch { entry = null; }
+      assert('MUST2: gazetteer entry is valid JSON', entry !== null, `parse failed: ${lines[0]}`);
+      if (entry) {
+        assert(
+          'MUST2: gazetteer path = targetDir (not method-repo path)',
+          entry.path === must2Tmp,
+          `path="${entry.path}" expected="${must2Tmp}"`
+        );
+        assert(
+          'MUST2: gazetteer visibility = private',
+          entry.visibility === 'private',
+          `visibility="${entry.visibility}"`
+        );
+        assert(
+          'MUST2: gazetteer remote = fake origin',
+          entry.remote === 'https://github.com/example-org/example-repo.git',
+          `remote="${entry.remote}"`
+        );
+      }
+    }
+  }
+
+  rmSync(must2Tmp, { recursive: true, force: true });
+}
+
+// ---- SHOULD: .atlas/domain file written; --domain flag honored ----
+console.log('\n--- smoke: SHOULD - .atlas/domain written; --domain flag honored ---');
+{
+  const domainTmp = mkdtempSync(join(tmpdir(), 'atlas-domain-smoke-'));
+
+  const origLog = console.log;
+  console.log = () => {};
+  try {
+    await cmdInit(['--profile', 'github', '--dir', domainTmp, '--domain', 'my-test-domain']);
+  } finally {
+    console.log = origLog;
+  }
+
+  const domainFilePath = join(domainTmp, '.atlas', 'domain');
+  assert('SHOULD: .atlas/domain file written', existsSync(domainFilePath), '.atlas/domain missing');
+  if (existsSync(domainFilePath)) {
+    const domainVal = readFileSync(domainFilePath, 'utf8').trim();
+    assert(
+      'SHOULD: .atlas/domain contains --domain flag value',
+      domainVal === 'my-test-domain',
+      `got: "${domainVal}"`
+    );
+  }
+
+  // AGENTS.md {{DOMAIN}} token must match the domain slug, not the directory basename.
+  const agentsContent = readFileSync(join(domainTmp, 'AGENTS.md'), 'utf8');
+  assert(
+    'SHOULD: AGENTS.md contains --domain value (not dir name)',
+    agentsContent.includes('my-test-domain'),
+    'my-test-domain not found in AGENTS.md'
+  );
+
+  rmSync(domainTmp, { recursive: true, force: true });
+}
+
 // ---- init: re-init refuses to clobber (without --force) ----
 console.log('\n--- smoke: atlas init - re-init refuses to clobber ---');
 {
