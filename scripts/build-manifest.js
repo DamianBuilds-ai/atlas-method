@@ -69,6 +69,7 @@ const MANIFEST_PAYLOAD = [
   'cli/cmd-update.js',
   'cli/db.js',
   'cli/gazetteer.js',
+  'cli/install-utils.js',
 ];
 
 function sha256(content) {

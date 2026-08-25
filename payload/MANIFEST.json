@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "methodVersion": "1.1.4",
-  "builtAt": "2026-08-24T08:27:03.382Z",
+  "builtAt": "2026-08-24T10:04:30.102Z",
   "files": {
     "templates/AGENTS.md": "c6744caa5c9e057e811b60a73c766c773ade51345b1b66f7dd6bf2aea6f3f02a",
     "templates/CLAUDE.md": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
@@ -18,12 +18,13 @@
     "cli/atlas.js": "678b9d93c2c69c1ce953fa4a865a615f7d173d48fc0ca6a6e4c4136ba2f1bdb9",
     "cli/cmd-adapters.js": "4bbba7a130a0f525075d2bf37bd2190051da61a50a0a207477821634151ef864",
     "cli/cmd-index.js": "7dd4f7a2655c7a421984567ac767723f51d6328bdcb6c4a96329b3e1cd726c89",
-    "cli/cmd-init.js": "5e9569b8ad476be6702964f2c789cc4b6011903363d3ff9bd2ae9533d75ea763",
+    "cli/cmd-init.js": "60a138163021b0c3b64072076ef3363cbef36bbbaa43525052614622fe800a07",
     "cli/cmd-orientation.js": "f3098955927e20af66ec8147e35935d4541a656ac260e03a5f0fea2020cfe131",
     "cli/cmd-refresh.js": "48b4d4f54b29d4ee330f4c34416fb160e22aa4525d354a8c731b9f0f21318a09",
     "cli/cmd-search.js": "fca35b39e0eee6f4c57e7df5851a600afe705a445fe4f213c23248cdf923fa77",
-    "cli/cmd-update.js": "97ba368bd85a661c0964faa4440c03a9648d756006f8e1f2e7b2069acdbfa8b2",
+    "cli/cmd-update.js": "7a9cf4de642e0b0fa6600349dd6dda325590a0be2e93414d2de1d2cd32f0e010",
     "cli/db.js": "357d80dcf31e23eea0b248aa650c56f1b0255998e80b3c680d6442cc8dd33442",
-    "cli/gazetteer.js": "2c6048f7b984cf29221ccee9b8c05d5317fd2e04cc4c8a37871c564da2be61c8"
+    "cli/gazetteer.js": "2c6048f7b984cf29221ccee9b8c05d5317fd2e04cc4c8a37871c564da2be61c8",
+    "cli/install-utils.js": "38a0621bbec9192c0b44dd37d504a98f73cf007cf031c8a84d6c3ca6a4f70c68"
   }
 }

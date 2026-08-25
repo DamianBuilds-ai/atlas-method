@@ -28,6 +28,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { templateRelToTargetRel } from './install-utils.js';
 
 const thisDir = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(thisDir, '..');
@@ -150,21 +151,6 @@ export async function cmdUpdate(args) {
   //
   // target path derivation: strip "templates/" prefix for template files;
   // adapters/jobs.json is not directly installed, only used for generation.
-
-  function templateRelToTargetRel(templateRel) {
-    // templates/AGENTS.md -> AGENTS.md
-    // templates/.gemini/settings.json -> .gemini/settings.json
-    // templates/hooks/datetime.sh -> .atlas/hooks/datetime.sh
-    // adapters/jobs.json -> (not directly installed as a file, skip in target comparison)
-    if (templateRel === 'adapters/jobs.json') return null;
-    if (templateRel.startsWith('templates/hooks/')) {
-      return '.atlas/hooks/' + templateRel.slice('templates/hooks/'.length);
-    }
-    if (templateRel.startsWith('templates/')) {
-      return templateRel.slice('templates/'.length);
-    }
-    return null;
-  }
 
   const fileResults = []; // { rel, targetRel, pkgCurrentHash, pkgInstalledHash, targetHash, status }
 
@@ -304,8 +290,14 @@ export async function cmdUpdate(args) {
     // UPSTREAM-CHANGED or NEW
     if (r.targetRel === null) continue;
 
-    const srcPath = join(TEMPLATES_DIR, r.rel.replace(/^templates\//, ''));
-    if (!existsSync(srcPath)) {
+    // Determine source path. Templates live under templates/; CLI files live under cli/ at repo root.
+    // Mirrors the same logic in cmd-init.js (templateRelToTargetRel is the shared mapping).
+    const srcPath = r.rel.startsWith('templates/')
+      ? join(TEMPLATES_DIR, r.rel.slice('templates/'.length))
+      : r.rel.startsWith('cli/')
+        ? join(REPO_ROOT, r.rel)
+        : null;
+    if (!srcPath || !existsSync(srcPath)) {
       console.warn(`WARN: source file missing for update: ${r.rel} - skipping`);
       continue;
     }
