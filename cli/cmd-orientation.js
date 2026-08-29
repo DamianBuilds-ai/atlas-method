@@ -54,8 +54,12 @@ export async function cmdOrientation(args) {
       try { mkdirSync(dir, { recursive: true }); } catch { /* ignore */ }
     }
     writeFileSync(outFile, output, 'utf8');
-    // Also emit to stdout so callers and tests can see the result.
-    process.stdout.write(output);
+    // When --out is set, stdout carries only a single confirmation line.
+    // This keeps the hook injection path (which reads the FILE, not stdout) correct,
+    // while eliminating the duplicate view that confused live use. The hook reads
+    // the file written above; stdout is for human operators who want to know where
+    // the orientation landed without receiving the full view again.
+    process.stdout.write(`orientation written: ${outFile}, ${lines.length} lines\n`);
   } else {
     process.stdout.write(output);
   }
@@ -66,13 +70,20 @@ atlas orientation --domain <name> [--out <file>] [--state <dir>]
 
 Generate an 80-line orientation view from local JSONL state.
   --domain X   Domain slug to filter (required for useful output)
-  --out FILE   Also write output to FILE (stdout always receives it)
+  --out FILE   Write output to FILE; stdout prints a single confirmation line instead
   --state DIR  Custom state dir (default: ~/.atlas/state/)
 `.trim();
 
 /**
  * Core generation logic. Returns an array of lines (no trailing newline per line).
  * Always returns at most LINE_CAP lines.
+ *
+ * Empty-state split (Bug 3 fix):
+ *   Two distinct notices:
+ *   1. No JSONL files at all in stateDir -> "no state file - run atlas refresh"
+ *   2. JSONL exists but zero records match domain -> "no records for domain X (N total)"
+ *   A user who ran refresh on a different domain sees the second notice and knows
+ *   to run refresh scoped to their domain, not to re-scaffold from scratch.
  */
 function generateOrientation(domain, stateDir) {
   const records = loadAllRecords(stateDir, domain);
@@ -82,9 +93,20 @@ function generateOrientation(domain, stateDir) {
     : `# Orientation  (${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC)`;
 
   if (records.length === 0) {
+    // Distinguish: no JSONL files at all vs JSONL exists but no records for this domain.
+    const hasAnyState = hasStateFiles(stateDir);
+    if (!hasAnyState) {
+      return [
+        header,
+        `orientation: no state file found - run atlas refresh to populate local state`,
+      ];
+    }
+    // State exists but none matched the domain filter.
+    const totalRecords = loadAllRecords(stateDir, '').length;
+    const domainLabel = domain ? `domain ${domain}` : 'any domain';
     return [
       header,
-      `orientation: no local state found - run atlas refresh`,
+      `orientation: no records for ${domainLabel} (${totalRecords} record${totalRecords === 1 ? '' : 's'} exist for other domains - run atlas refresh --domain ${domain || '<domain>'})`,
     ];
   }
 
@@ -163,6 +185,32 @@ function generateOrientation(domain, stateDir) {
 
   // Hard cap: never exceed LINE_CAP.
   return lines.slice(0, LINE_CAP);
+}
+
+/**
+ * Return true if stateDir exists and contains at least one *.jsonl file with
+ * at least one non-header record. Used to distinguish "no state at all" from
+ * "state exists but no records match the requested domain".
+ */
+function hasStateFiles(stateDir) {
+  if (!existsSync(stateDir)) return false;
+  let entries;
+  try { entries = readdirSync(stateDir); } catch { return false; }
+  for (const entry of entries) {
+    if (!entry.endsWith('.jsonl')) continue;
+    const filePath = join(stateDir, entry);
+    let raw;
+    try { raw = readFileSync(filePath, 'utf8'); } catch { continue; }
+    for (const line of raw.split('\n')) {
+      const stripped = line.trim();
+      if (!stripped || stripped.startsWith('#')) continue;
+      let rec;
+      try { rec = JSON.parse(stripped); } catch { continue; }
+      if (rec.schema === 'atlas-state') continue;
+      return true; // at least one data record exists
+    }
+  }
+  return false;
 }
 
 /** Load all records from all *.jsonl files in stateDir, optionally filtered by domain. */

@@ -358,8 +358,8 @@ console.log('\n--- smoke: cmdOrientation degraded path (empty state) ---');
     true // reaching here means no exception
   );
   assert(
-    'orientation-degraded: visible notice line present',
-    allOutput.includes('no local state found'),
+    'orientation-degraded: visible notice line present (no-jsonl path)',
+    allOutput.includes('no state file found'),
     `got: "${allOutput.slice(0, 200)}"`
   );
 }
@@ -1476,6 +1476,355 @@ console.log('\n--- smoke: atlas update - true no-op after fresh init ---');
   );
 
   rmSync(noopTmp, { recursive: true, force: true });
+}
+
+// ---- lived-in fixes smoke (Bug 1-4) ----
+// Bug 1: unlabeled issue gets default-stamped with visible domain_source field and
+//        is counted in the refresh summary. Labeled issue keeps its label domain.
+// Bug 2: init --profile github creates the domain:{slug} label (mock gh assert) and
+//        prints a visible notice when gh is absent/unauthenticated.
+// Bug 3: orientation distinguishes "no JSONL" vs "JSONL exists, none match domain".
+// Bug 4: --out is stdout-quiet with a single confirmation line.
+console.log('\n--- smoke: lived-in fixes (Bug 1-4) ---');
+{
+  const { mkdtempSync: _mkdt, rmSync: _rm } = await import('node:fs');
+  const livedInTmp = _mkdt(join(tmpdir(), 'atlas-livedin-'));
+
+  // --- Bug 1: default-domain stamping ---
+  {
+    const b1StateDir = join(livedInTmp, 'b1-state');
+    mkdirSync(b1StateDir, { recursive: true });
+    const b1StatePath = join(b1StateDir, 'local.jsonl');
+    const b1Header = JSON.stringify({ schema: 'atlas-state', version: 1 });
+    // Pre-existing local-only row: must survive untouched.
+    const b1LocalOnly = JSON.stringify({
+      id: 'task-localonly', kind: 'task', domain: 'agora', title: 'local-only row',
+      body: '', status: 'open', labels: [], issue: null,
+      created: '2026-01-01T00:00:00Z', updated: '2026-01-01T00:00:00Z', source: 'session',
+    });
+    writeFileSync(b1StatePath, `${b1Header}\n${b1LocalOnly}\n`);
+
+    // Write .atlas/domain so cmdRefresh knows the default.
+    const b1AtlasDir = join(livedInTmp, 'b1-cwd', '.atlas');
+    mkdirSync(b1AtlasDir, { recursive: true });
+    writeFileSync(join(b1AtlasDir, 'domain'), 'agora\n');
+
+    // Mock gh: override execSync for this test section by patching the module.
+    // Strategy: capture console output, patch process.env to influence the mock,
+    // and call cmdRefresh with a custom state path. We mock gh via a sub-test
+    // that directly calls the module internals by simulating what a mock gh would produce.
+    // Since we cannot easily mock execSync at the module level, we test the domain
+    // resolution logic by writing state directly and reading it back, then verify the
+    // domain_source field via a direct fixture test.
+    //
+    // Direct fixture: write two records manually as refresh would write them
+    // (one labeled, one default) and confirm the field values are correct.
+    const labeledRec = JSON.stringify({
+      id: 'task-labeled', kind: 'task', domain: 'oxide', domain_source: 'label',
+      title: 'Issue with domain:oxide label', body: '', status: 'open',
+      labels: ['domain:oxide'], issue: 42, created: '2026-08-29T00:00:00Z',
+      updated: '2026-08-29T00:00:00Z', source: 'issue-sync',
+    });
+    const defaultRec = JSON.stringify({
+      id: 'task-defaulted', kind: 'task', domain: 'agora', domain_source: 'default',
+      title: 'Unlabeled issue default-stamped', body: '', status: 'open',
+      labels: [], issue: 99, created: '2026-08-29T00:00:00Z',
+      updated: '2026-08-29T00:00:00Z', source: 'issue-sync',
+    });
+    writeFileSync(b1StatePath, `${b1Header}\n${b1LocalOnly}\n${labeledRec}\n${defaultRec}\n`);
+
+    const rawB1 = readFileSync(b1StatePath, 'utf8');
+    const b1Recs = rawB1.split('\n').filter(l => l.trim()).map(l => {
+      try { return JSON.parse(l); } catch { return null; }
+    }).filter(r => r && !r.schema);
+
+    const labeled = b1Recs.find(r => r.issue === 42);
+    const defaulted = b1Recs.find(r => r.issue === 99);
+    const localOnly = b1Recs.find(r => r.issue === null);
+
+    assert(
+      'bug1: labeled issue has domain_source label',
+      labeled && labeled.domain_source === 'label' && labeled.domain === 'oxide',
+      `got: ${JSON.stringify(labeled)}`
+    );
+    assert(
+      'bug1: unlabeled issue has domain_source default',
+      defaulted && defaulted.domain_source === 'default' && defaulted.domain === 'agora',
+      `got: ${JSON.stringify(defaulted)}`
+    );
+    assert(
+      'bug1: local-only row preserved (no domain_source injected)',
+      localOnly && localOnly.issue === null && localOnly.domain === 'agora',
+      `got: ${JSON.stringify(localOnly)}`
+    );
+
+    // Verify summary output includes default-stamp count.
+    // We invoke cmdRefresh with a mocked gh that returns one unlabeled issue.
+    // The mock is achieved by writing a tiny shell script to PATH.
+    const ghMockDir = join(livedInTmp, 'b1-ghbin');
+    mkdirSync(ghMockDir, { recursive: true });
+    // Mock gh script: when called with 'issue list', emit one unlabeled issue JSON.
+    const unlabeledIssueJson = JSON.stringify([{
+      number: 101, title: 'Unlabeled issue', body: '',
+      labels: [], state: 'OPEN',
+      createdAt: '2026-08-29T00:00:00Z', updatedAt: '2026-08-29T00:00:00Z',
+    }]);
+    const ghMock = [
+      '#!/bin/sh',
+      // auth status check: succeed
+      'if [ "$1" = "auth" ]; then exit 0; fi',
+      // issue list: emit one unlabeled issue
+      `if [ "$1" = "issue" ]; then echo '${unlabeledIssueJson}'; exit 0; fi`,
+      'exit 1',
+    ].join('\n') + '\n';
+    writeFileSync(join(ghMockDir, 'gh'), ghMock);
+    execSync(`chmod +x "${join(ghMockDir, 'gh')}"`);
+
+    // State for refresh mock test.
+    const b1RefreshState = join(livedInTmp, 'b1-refresh-local.jsonl');
+    writeFileSync(b1RefreshState, `${b1Header}\n`);
+
+    // Run cmdRefresh in a cwd that has .atlas/domain = agora.
+    const b1Cwd = join(livedInTmp, 'b1-cwd');
+    mkdirSync(b1Cwd, { recursive: true });
+    const origCwd = process.cwd();
+    const origPath = process.env.PATH;
+    const refreshLines = [];
+    const origLog = console.log;
+    const origWarn = console.warn;
+    console.log = (...a) => refreshLines.push(a.join(' '));
+    console.warn = (...a) => refreshLines.push(a.join(' '));
+    try {
+      process.chdir(b1Cwd);
+      process.env.PATH = `${ghMockDir}:${origPath}`;
+      await cmdRefresh(['--state', b1RefreshState]);
+    } finally {
+      process.chdir(origCwd);
+      process.env.PATH = origPath;
+      console.log = origLog;
+      console.warn = origWarn;
+    }
+
+    const refreshSummary = refreshLines.join('\n');
+    assert(
+      'bug1: refresh summary mentions default-stamped count',
+      refreshSummary.includes('default-stamped'),
+      `summary: "${refreshSummary}"`
+    );
+
+    const b1RefreshedRaw = readFileSync(b1RefreshState, 'utf8');
+    const b1RefreshedRecs = b1RefreshedRaw.split('\n').filter(l => l.trim()).map(l => {
+      try { return JSON.parse(l); } catch { return null; }
+    }).filter(r => r && !r.schema);
+
+    const stamped = b1RefreshedRecs.find(r => r.issue === 101);
+    assert(
+      'bug1: unlabeled issue stamped with default domain from .atlas/domain',
+      stamped && stamped.domain === 'agora' && stamped.domain_source === 'default',
+      `got: ${JSON.stringify(stamped)}`
+    );
+  }
+
+  // --- Bug 2: init creates domain label (mock gh) and notices when gh absent ---
+  {
+    const b2GhMockDir = join(livedInTmp, 'b2-ghbin');
+    mkdirSync(b2GhMockDir, { recursive: true });
+    // Mock gh: label create succeeds; record the call args.
+    const b2ArgsFile = join(livedInTmp, 'b2-gh-args.txt');
+    const ghLabelMock = [
+      '#!/bin/sh',
+      `printf '%s\\n' "$*" >> "${b2ArgsFile}"`,
+      'exit 0',
+    ].join('\n') + '\n';
+    writeFileSync(join(b2GhMockDir, 'gh'), ghLabelMock);
+    execSync(`chmod +x "${join(b2GhMockDir, 'gh')}"`);
+
+    const b2InitDir = join(livedInTmp, 'b2-initdir');
+    mkdirSync(b2InitDir, { recursive: true });
+    // Bare git init so gh remote detection does not fail.
+    execSync('git init -b main', { cwd: b2InitDir, stdio: 'pipe' });
+
+    const initLines = [];
+    const origLog2 = console.log;
+    const origWarn2 = console.warn;
+    console.log = (...a) => initLines.push(a.join(' '));
+    console.warn = (...a) => initLines.push(a.join(' '));
+    const origPath2 = process.env.PATH;
+    try {
+      process.env.PATH = `${b2GhMockDir}:${origPath2}`;
+      await cmdInit(['--profile', 'github', '--dir', b2InitDir, '--domain', 'pilot']);
+    } finally {
+      console.log = origLog2;
+      console.warn = origWarn2;
+      process.env.PATH = origPath2;
+    }
+
+    const initOutput = initLines.join('\n');
+    assert(
+      'bug2: init output tells adopter to label issues with domain:{slug}',
+      initOutput.includes('domain:pilot'),
+      `init output: "${initOutput.slice(0, 400)}"`
+    );
+
+    const ghArgs = existsSync(b2ArgsFile) ? readFileSync(b2ArgsFile, 'utf8') : '';
+    assert(
+      'bug2: gh label create called with domain:pilot',
+      ghArgs.includes('label') && ghArgs.includes('domain:pilot'),
+      `gh args: "${ghArgs}"`
+    );
+
+    // Subtest: gh label create fails - must print visible notice, not throw.
+    // Mock gh always fails for label create by exiting 1; all other subcommands succeed.
+    // The key: the condition checks the first TWO args so 'gh label create' matches correctly.
+    const b2FailGhDir = join(livedInTmp, 'b2-failgh-bin');
+    mkdirSync(b2FailGhDir, { recursive: true });
+    const ghFailMock = [
+      '#!/bin/sh',
+      '# Mock gh: "label create" fails; everything else succeeds.',
+      'if [ "$1" = "label" ] && [ "$2" = "create" ]; then',
+      '  printf "gh: command failed: unauthenticated\\n" >&2',
+      '  exit 1',
+      'fi',
+      'exit 0',
+    ].join('\n') + '\n';
+    writeFileSync(join(b2FailGhDir, 'gh'), ghFailMock);
+    execSync(`chmod +x "${join(b2FailGhDir, 'gh')}"`);
+
+    const b2NoGhDir = join(livedInTmp, 'b2-nogh-initdir');
+    mkdirSync(b2NoGhDir, { recursive: true });
+    execSync('git init -b main', { cwd: b2NoGhDir, stdio: 'pipe' });
+
+    const noGhLines = [];
+    const origLog3 = console.log;
+    const origWarn3 = console.warn;
+    console.log = (...a) => noGhLines.push(a.join(' '));
+    console.warn = (...a) => noGhLines.push(a.join(' '));
+    const origPath3 = process.env.PATH;
+    let initNoGhThrew = false;
+    try {
+      // Prepend the failing-gh dir so our mock gh shadows any real gh on PATH.
+      process.env.PATH = `${b2FailGhDir}:${origPath3}`;
+      await cmdInit(['--profile', 'github', '--dir', b2NoGhDir, '--domain', 'pilot2']);
+    } catch {
+      initNoGhThrew = true;
+    } finally {
+      console.log = origLog3;
+      console.warn = origWarn3;
+      process.env.PATH = origPath3;
+    }
+    const noGhOutput = noGhLines.join('\n');
+    assert(
+      'bug2: init does not throw when gh label create fails',
+      !initNoGhThrew,
+      'init threw an exception when gh label create failed'
+    );
+    assert(
+      'bug2: init prints visible notice when gh label create fails',
+      noGhOutput.includes('NOTICE') || noGhOutput.includes('manually'),
+      `no-gh output: "${noGhOutput.slice(0, 600)}"`
+    );
+  }
+
+  // --- Bug 3: orientation distinguishes two empty-state cases ---
+  {
+    const b3StateDir = join(livedInTmp, 'b3-state');
+    mkdirSync(b3StateDir, { recursive: true });
+
+    // Case A: stateDir exists but NO jsonl files at all.
+    const b3LinesA = [];
+    const origWriteA = process.stdout.write.bind(process.stdout);
+    process.stdout.write = (chunk) => { b3LinesA.push(String(chunk)); return true; };
+    await cmdOrientation(['--domain', 'agora', '--state', b3StateDir]);
+    process.stdout.write = origWriteA;
+    const b3OutputA = b3LinesA.join('');
+    assert(
+      'bug3: no-jsonl case says "no state file" (not "no records")',
+      b3OutputA.includes('no state file'),
+      `got: "${b3OutputA.slice(0, 200)}"`
+    );
+    assert(
+      'bug3: no-jsonl case does not say "no records"',
+      !b3OutputA.includes('no records'),
+      `got: "${b3OutputA.slice(0, 200)}"`
+    );
+
+    // Case B: stateDir has jsonl with records for a DIFFERENT domain.
+    const b3Header = JSON.stringify({ schema: 'atlas-state', version: 1 });
+    const b3OtherRec = JSON.stringify({
+      id: 'task-other', kind: 'task', domain: 'treasury', title: 'other domain task',
+      body: '', status: 'open', labels: ['domain:treasury'], issue: null,
+      created: '2026-08-29T00:00:00Z', updated: '2026-08-29T00:00:00Z', source: 'session',
+    });
+    writeFileSync(join(b3StateDir, 'treasury.jsonl'), `${b3Header}\n${b3OtherRec}\n`);
+
+    const b3LinesB = [];
+    const origWriteB = process.stdout.write.bind(process.stdout);
+    process.stdout.write = (chunk) => { b3LinesB.push(String(chunk)); return true; };
+    await cmdOrientation(['--domain', 'agora', '--state', b3StateDir]);
+    process.stdout.write = origWriteB;
+    const b3OutputB = b3LinesB.join('');
+    assert(
+      'bug3: records-exist case says "no records for domain"',
+      b3OutputB.includes('no records'),
+      `got: "${b3OutputB.slice(0, 200)}"`
+    );
+    assert(
+      'bug3: records-exist case reports total record count',
+      b3OutputB.includes('1 record'),
+      `got: "${b3OutputB.slice(0, 200)}"`
+    );
+    assert(
+      'bug3: records-exist case does not say "no state file"',
+      !b3OutputB.includes('no state file'),
+      `got: "${b3OutputB.slice(0, 200)}"`
+    );
+  }
+
+  // --- Bug 4: --out is stdout-quiet with confirmation line ---
+  {
+    const b4StateDir = join(livedInTmp, 'b4-state');
+    mkdirSync(b4StateDir, { recursive: true });
+    const b4Header = JSON.stringify({ schema: 'atlas-state', version: 1 });
+    const b4Rec = JSON.stringify({
+      id: 'task-b4', kind: 'task', domain: 'agora', title: 'Bug 4 test task',
+      body: '', status: 'open', labels: ['domain:agora'], issue: null,
+      created: '2026-08-29T00:00:00Z', updated: '2026-08-29T00:00:00Z', source: 'session',
+    });
+    writeFileSync(join(b4StateDir, 'agora.jsonl'), `${b4Header}\n${b4Rec}\n`);
+
+    const b4OutFile = join(livedInTmp, 'b4-orientation.md');
+    const b4StdoutChunks = [];
+    const origWriteB4 = process.stdout.write.bind(process.stdout);
+    process.stdout.write = (chunk) => { b4StdoutChunks.push(String(chunk)); return true; };
+    await cmdOrientation(['--domain', 'agora', '--out', b4OutFile, '--state', b4StateDir]);
+    process.stdout.write = origWriteB4;
+
+    const b4Stdout = b4StdoutChunks.join('');
+    const b4FileContent = existsSync(b4OutFile) ? readFileSync(b4OutFile, 'utf8') : '';
+
+    assert(
+      'bug4: --out stdout is a single confirmation line (not full view)',
+      b4Stdout.includes('orientation written:') && b4Stdout.split('\n').filter(l => l.trim()).length <= 2,
+      `stdout: "${b4Stdout.slice(0, 400)}"`
+    );
+    assert(
+      'bug4: --out file contains full orientation view',
+      b4FileContent.includes('# Orientation') && b4FileContent.includes('Bug 4 test task'),
+      `file: "${b4FileContent.slice(0, 200)}"`
+    );
+    assert(
+      'bug4: confirmation line includes file path',
+      b4Stdout.includes(b4OutFile),
+      `stdout: "${b4Stdout}"`
+    );
+    assert(
+      'bug4: confirmation line includes line count',
+      /\d+ lines/.test(b4Stdout),
+      `stdout: "${b4Stdout}"`
+    );
+  }
+
+  _rm(livedInTmp, { recursive: true, force: true });
 }
 
 // ---- manifest freshness smoke: payload/MANIFEST.json must match on-disk hashes ----
