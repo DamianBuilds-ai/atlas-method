@@ -2,6 +2,14 @@
 // Pulls GitHub Issues via `gh issue list --json --state all` (LIST endpoint only,
 // never the Search API) and reconciles into the local JSONL state file.
 // Local-only rows (issue: null) are NEVER modified - they are sacrosanct.
+//
+// Default-domain stamping (Bug 1 fix):
+//   Issues that carry no domain:* label land with domain_source:"default" and the
+//   domain slug read from .atlas/domain in the cwd. This covers the single-domain
+//   pilot case and unlabeled strays without silently dropping them. Multi-domain
+//   repos rely on explicit domain:* labels (domain_source:"label"); the default only
+//   fires when no label is present. The refresh summary reports how many records
+//   were default-stamped so the operator can add labels to clean them up.
 
 import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -15,6 +23,21 @@ const HEADER = JSON.stringify({ schema: 'atlas-state', version: 1 });
 // Six valid record kinds per Draft 3 s. 7 schema.
 const VALID_KINDS = new Set(['task', 'decision', 'finding', 'suggestion', 'idea', 'carried']);
 
+/**
+ * Read the declared default domain from .atlas/domain in the current working directory.
+ * Returns '' if the file is absent or unreadable (graceful degradation).
+ * This is the same file that atlas init writes with the domainSlug value.
+ */
+function readDefaultDomain() {
+  const domainFile = join(process.cwd(), '.atlas', 'domain');
+  if (!existsSync(domainFile)) return '';
+  try {
+    return readFileSync(domainFile, 'utf8').trim();
+  } catch {
+    return '';
+  }
+}
+
 export async function cmdRefresh(args) {
   let domain = '';
   let statePath = DEFAULT_STATE_PATH;
@@ -23,6 +46,10 @@ export async function cmdRefresh(args) {
     if (args[i] === '--domain' && args[i + 1]) domain = args[++i];
     else if (args[i] === '--state' && args[i + 1]) statePath = args[++i];
   }
+
+  // Read the declared default domain once. Used to stamp unlabeled issues.
+  // Prefer the --domain flag when given (it scopes the gh query too).
+  const defaultDomain = domain || readDefaultDomain();
 
   // Verify gh is available. Fail open with a visible notice if not authenticated -
   // M7 SessionStart will call refresh; a hook must not block the session.
@@ -76,11 +103,29 @@ export async function cmdRefresh(args) {
   const now = new Date().toISOString();
   let created = 0;
   let updated = 0;
+  let defaultStamped = 0;
 
   for (const issue of rawIssues) {
     const issueNum = issue.number;
     const labels = (issue.labels || []).map(l => l.name);
-    const issueDomain = domain || inferDomainFromLabels(labels);
+
+    // Resolve domain: prefer explicit label, fall back to declared default.
+    // domain_source makes the stamping visible so multi-domain operators can
+    // spot unlabeled strays and add the correct label to clean them up.
+    const labelDomain = inferDomainFromLabels(labels);
+    let issueDomain;
+    let domainSource;
+    if (labelDomain) {
+      issueDomain = labelDomain;
+      domainSource = 'label';
+    } else if (defaultDomain) {
+      issueDomain = defaultDomain;
+      domainSource = 'default';
+    } else {
+      issueDomain = '';
+      domainSource = 'unknown';
+    }
+
     const status = issue.state === 'CLOSED' ? (labels.includes('declined') ? 'declined' : 'done') : 'open';
 
     if (byIssue.has(issueNum)) {
@@ -91,6 +136,7 @@ export async function cmdRefresh(args) {
       rec.status = status;
       rec.labels = labels;
       rec.domain = issueDomain || rec.domain;
+      rec.domain_source = domainSource;
       rec.updated = now;
       rec.source = 'issue-sync';
       updated++;
@@ -98,10 +144,11 @@ export async function cmdRefresh(args) {
       // Create new record from GitHub issue.
       const kind = kindFromLabels(labels);
       const id = `${kind}-${randomBytes(4).toString('hex')}`;
-      existing.push({
+      const newRec = {
         id,
         kind,
         domain: issueDomain,
+        domain_source: domainSource,
         title: issue.title,
         body: (issue.body || '').slice(0, 4000),
         status,
@@ -110,15 +157,20 @@ export async function cmdRefresh(args) {
         created: issue.createdAt || now,
         updated: now,
         source: 'issue-sync',
-      });
+      };
+      existing.push(newRec);
       created++;
+      if (domainSource === 'default') defaultStamped++;
     }
   }
 
   saveState(statePath, existing);
   const localOnly = existing.filter(r => r.issue === null || r.issue === undefined).length;
   const total = existing.length;
-  console.log(`atlas refresh: ${created} created, ${updated} updated. Total records: ${total} (${localOnly} local-only).`);
+  const stampNote = defaultStamped > 0
+    ? ` (${defaultStamped} default-stamped from .atlas/domain - add domain:* labels to classify)`
+    : '';
+  console.log(`atlas refresh: ${created} created, ${updated} updated. Total records: ${total} (${localOnly} local-only).${stampNote}`);
 }
 
 /** Load all records from a JSONL state file. Skips header and comment lines. */
@@ -159,7 +211,12 @@ function kindFromLabels(labels) {
   return 'task';
 }
 
-/** Infer domain from GitHub issue labels. Returns empty string if not found. */
+/**
+ * Infer domain from GitHub issue labels. Returns empty string if not found.
+ * Callers check the return value and fall back to the declared default domain
+ * (from .atlas/domain) when this returns ''. Never returns the default here -
+ * that logic lives at the call site so domain_source can be set correctly.
+ */
 function inferDomainFromLabels(labels) {
   for (const l of labels) {
     if (l.startsWith('domain:')) return l.slice(7);

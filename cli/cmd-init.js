@@ -490,6 +490,29 @@ GitHub profile prerequisites:
   After installing Claude Code: run /hooks-trust in your project root once.
   After installing Grok: the --trust flag on plugin install grants hook trust.
 `);
+
+    // Create the domain:{slug} label on the GitHub repo so issues can be tagged.
+    // Fail-open: if gh is absent, unauthenticated, or the label already exists,
+    // print a visible notice and continue. The adopter can create it manually.
+    console.log(`NOTE: label issues with domain:${domainSlug} to assign them to this domain.`);
+    console.log(`  Unlabeled issues fall to the declared default domain during refresh.`);
+    try {
+      execSync(
+        `gh label create "domain:${domainSlug}" --color "0075ca" --description "Atlas Method domain: ${domainSlug}"`,
+        { stdio: 'pipe', cwd: targetDir }
+      );
+      console.log(`  Created GitHub label: domain:${domainSlug}`);
+    } catch (err) {
+      const msg = (err.stderr || err.message || String(err)).slice(0, 200);
+      if (msg.includes('already exists') || msg.includes('Unprocessable')) {
+        console.log(`  Label domain:${domainSlug} already exists on the repo - no action needed.`);
+      } else if (msg.includes('not found') || msg.includes('Could not resolve') || msg.includes('Could not find')) {
+        console.log(`  NOTICE: gh could not find a GitHub remote - create the label manually: gh label create "domain:${domainSlug}"`);
+      } else {
+        console.log(`  NOTICE: could not create label (gh unavailable or unauthenticated). Create it manually:`);
+        console.log(`    gh label create "domain:${domainSlug}" --color "0075ca" --description "Atlas Method domain: ${domainSlug}"`);
+      }
+    }
   }
 
   if (skipped.length > 0) {
