@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "methodVersion": "1.1.4",
-  "builtAt": "2026-08-29T07:30:30.228Z",
+  "builtAt": "2026-08-30T07:39:01.190Z",
   "files": {
-    "templates/AGENTS.md": "c6744caa5c9e057e811b60a73c766c773ade51345b1b66f7dd6bf2aea6f3f02a",
+    "templates/AGENTS.md": "ce05c7b753dd9e84049c499cb8f6786f656b9aac4329743721182aebe65cdba0",
     "templates/CLAUDE.md": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
     "templates/GEMINI.md": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
     "templates/.gemini/settings.json": "73585577a3e0a4cf0153e59177edf6ac8910f27e8eadeb7ce2893de4f6eca7f1",
@@ -14,9 +14,10 @@
     "templates/WORKTREES.md": "f917825aeaddc8121d795392c29a85f40f2806ea6e08fd54fb1ea342c1ef36d6",
     "templates/scripts/worktree-gc.sh": "8ef13221752d974b4334ddb794918dd5984f37dbc0298cbbba2c556a9b3bf930",
     "adapters/jobs.json": "75f8c64d2ca473c8c91b543c690fe474c10e9a471152ffee29e465f1032c6d71",
+    "adapters/commands.json": "97b4ea496bd65ebc1da372088b16092719fe4b3e8053276e54712e59aeb1d952",
     "cli/atlas-launch.sh": "904168f617dd7bafa12a2f3ee1dda325026b65e41166454111ed9cc5c0037641",
     "cli/atlas.js": "678b9d93c2c69c1ce953fa4a865a615f7d173d48fc0ca6a6e4c4136ba2f1bdb9",
-    "cli/cmd-adapters.js": "4bbba7a130a0f525075d2bf37bd2190051da61a50a0a207477821634151ef864",
+    "cli/cmd-adapters.js": "9cde9df43fd24d6cb1a37c61e4af17ae1c52a07edd7bd92c90b6dff447bd37f8",
     "cli/cmd-index.js": "7dd4f7a2655c7a421984567ac767723f51d6328bdcb6c4a96329b3e1cd726c89",
     "cli/cmd-init.js": "533b5e0620b9213a3635015850ed88f6e33f980be78297059667a3f285102ed5",
     "cli/cmd-orientation.js": "8c65f62c42bc79d5eef4a73578a6bea2d95f5d633e021fe2c5b737ac7eb94a01",

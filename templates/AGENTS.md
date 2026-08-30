@@ -93,6 +93,25 @@ with map + empty baton stub, never silences.
 all runners including Grok. Claude Code also receives the orientation via
 `additionalContext` injection, but that is a bonus - always read the file.
 
+### Compact-aware start
+
+When a session is opened with a named compact (produced by `/forward`),
+replace the normal flow with:
+
+1. This file loads (same as always).
+2. The domain map loads (same as always).
+3. **Read the compact** (`sessions/current/{{DOMAIN}}-compact.md` or the
+   named path in the opener). The compact tells where the work is.
+4. **Read the working scratchpad** named in the compact.
+5. Skip the orientation file re-read and the apply opener. Do not re-fire
+   Stage 1 scouts - the compact is the orientation.
+6. **Load any file the work needs,** including files the compact's Key-files
+   list names. Compact-aware start is not file-blind. The compact tells
+   WHERE the work is, not what to ignore.
+
+Compact-aware start ends when the operator has reviewed the compact and
+confirmed the ship order. Then proceed as normal for that session.
+
 ---
 
 ## 5. Baton lifecycle

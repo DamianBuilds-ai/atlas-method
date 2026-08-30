@@ -265,6 +265,122 @@ function generateGemini(jobs, outBase) {
   return [{ runner: 'gemini', filePath }];
 }
 
+// ---- Operator command generators (/forward and siblings) ----
+// Source: adapters/commands.json (single source of truth for operator slash commands).
+// Commands are distinct from agent jobs: they are operator-invoked method actions,
+// not child agent dispatches. Generated as flat .md files in commands/ directories.
+
+function loadCommands(rootDir = repoRoot) {
+  const commandsPath = join(rootDir, 'adapters', 'commands.json');
+  if (!existsSync(commandsPath)) {
+    return null; // commands.json is optional; graceful skip if absent
+  }
+  const raw = readFileSync(commandsPath, 'utf8');
+  return JSON.parse(raw);
+}
+
+// Claude command adapter: flat .md file in .claude/commands/
+// Filename stem = command name (Claude Code custom command convention).
+function claudeCommandBody(cmdName, cmd) {
+  const stepsBlock = cmd.steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  return [
+    `<!-- generated from adapters/commands.json - do not hand-edit -->`,
+    `---`,
+    `description: ${cmd.description}`,
+    `---`,
+    ``,
+    `# /${cmdName}`,
+    ``,
+    `${cmd.description}`,
+    ``,
+    `**Scope boundary:** ${cmd.scope_boundary}`,
+    ``,
+    `**Context economics:** ${cmd.context_economics}`,
+    ``,
+    `## Steps`,
+    ``,
+    stepsBlock,
+    ``,
+    `## Compact-aware session start`,
+    ``,
+    `When the next session is opened with a compact produced by /${cmdName}:`,
+    ``,
+    `- **Load:** ${cmd.compact_aware_start.load.join(', ')}`,
+    `- **Skip:** ${cmd.compact_aware_start.skip.join(', ')}`,
+    `- **Not skipped:** ${cmd.compact_aware_start.not_skip}`,
+    ``,
+    `${cmd.compact_aware_start.note}`,
+    ``,
+  ].join('\n');
+}
+
+function generateClaudeCommands(commands, outBase) {
+  const generated = [];
+  for (const [cmdName, cmd] of Object.entries(commands)) {
+    const filePath = join(outBase, `${cmdName}.md`);
+    const content = claudeCommandBody(cmdName, cmd);
+    writeGenerated(filePath, content);
+    generated.push({ runner: 'claude', cmdName, filePath });
+  }
+  return generated;
+}
+
+// Grok command adapter: flat .md file in .grok/commands/
+// Confirmed: flat *.md files under a commands/ directory become user-invocable
+// slash commands; filename stem = command name (skills doc, command discovery section).
+// Frontmatter: description field confirmed from skills doc SKILL.md format.
+// TODO(grok-commands-schema): Confirm whether mcpInheritance and user-invocable
+//   fields apply to flat commands/ format. Not enumerated in docs/user-guide/08-skills.md
+//   for the commands/ variant. Omitting both; Grok infers slash command from filename.
+function grokCommandBody(cmdName, cmd) {
+  const stepsBlock = cmd.steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  return [
+    `---`,
+    `# generated from adapters/commands.json - do not hand-edit`,
+    `description: >-`,
+    `  ${cmd.description}`,
+    `---`,
+    ``,
+    `# /${cmdName}`,
+    ``,
+    `${cmd.description}`,
+    ``,
+    `**Scope boundary:** ${cmd.scope_boundary}`,
+    ``,
+    `**Context economics:** ${cmd.context_economics}`,
+    ``,
+    `## Steps`,
+    ``,
+    stepsBlock,
+    ``,
+    `## Compact-aware session start`,
+    ``,
+    `When the next session is opened with a compact produced by /${cmdName}:`,
+    ``,
+    `- **Load:** ${cmd.compact_aware_start.load.join(', ')}`,
+    `- **Skip:** ${cmd.compact_aware_start.skip.join(', ')}`,
+    `- **Not skipped:** ${cmd.compact_aware_start.not_skip}`,
+    ``,
+    `${cmd.compact_aware_start.note}`,
+    ``,
+    `<!-- TODO(grok-commands-schema): confirm mcpInheritance + user-invocable applicability`,
+    `     for flat commands/ format vs agents/ format (08-skills.md does not enumerate these`,
+    `     for the commands/ variant). ${cmd.grok.TODO} -->`,
+    ``,
+  ].join('\n');
+}
+
+function generateGrokCommands(commands, outBase) {
+  const generated = [];
+  for (const [cmdName, cmd] of Object.entries(commands)) {
+    const filePath = join(outBase, `${cmdName}.md`);
+    const content = grokCommandBody(cmdName, cmd);
+    writeGenerated(filePath, content);
+    generated.push({ runner: 'grok', cmdName, filePath });
+  }
+  return generated;
+}
+
 // ---- main command ----
 
 export async function cmdAdapters(args) {
@@ -287,27 +403,46 @@ export async function cmdAdapters(args) {
   const effectiveRoot = rootIdx !== -1 ? resolve(args[rootIdx + 1]) : repoRoot;
 
   let { jobs } = loadJobs(effectiveRoot);
+  const commandsDef = loadCommands(effectiveRoot);
 
   const templatesDir = join(effectiveRoot, 'templates');
   const allGenerated = [];
 
   if (runner === 'claude' || runner === 'all') {
-    const out = join(templatesDir, '.claude', 'agents');
-    const files = generateClaude(jobs, out);
+    const agentsOut = join(templatesDir, '.claude', 'agents');
+    const files = generateClaude(jobs, agentsOut);
     allGenerated.push(...files);
     console.log(`Claude: generated ${files.length} adapter file(s) in templates/.claude/agents/`);
     for (const f of files) {
       console.log(`  ${f.jobName} -> ${f.tier}.md`);
     }
+    if (commandsDef) {
+      const cmdsOut = join(templatesDir, '.claude', 'commands');
+      const cmdFiles = generateClaudeCommands(commandsDef.commands, cmdsOut);
+      allGenerated.push(...cmdFiles);
+      console.log(`Claude: generated ${cmdFiles.length} command file(s) in templates/.claude/commands/`);
+      for (const f of cmdFiles) {
+        console.log(`  /${f.cmdName} -> ${f.cmdName}.md`);
+      }
+    }
   }
 
   if (runner === 'grok' || runner === 'all') {
-    const out = join(templatesDir, '.grok', 'agents');
-    const files = generateGrok(jobs, out);
+    const agentsOut = join(templatesDir, '.grok', 'agents');
+    const files = generateGrok(jobs, agentsOut);
     allGenerated.push(...files);
     console.log(`Grok: generated ${files.length} file(s) in templates/.grok/agents/ (real schema from 16-subagents.md)`);
     for (const f of files) {
       console.log(`  ${f.jobName} -> ${f.jobName}.md (persona: ${f.persona})`);
+    }
+    if (commandsDef) {
+      const cmdsOut = join(templatesDir, '.grok', 'commands');
+      const cmdFiles = generateGrokCommands(commandsDef.commands, cmdsOut);
+      allGenerated.push(...cmdFiles);
+      console.log(`Grok: generated ${cmdFiles.length} command file(s) in templates/.grok/commands/`);
+      for (const f of cmdFiles) {
+        console.log(`  /${f.cmdName} -> ${f.cmdName}.md`);
+      }
     }
   }
 
@@ -328,6 +463,6 @@ export async function cmdAdapters(args) {
     console.log(`Gemini: generated ${files.length} stub file(s) in templates/.gemini/`);
   }
 
-  console.log(`\nTotal: ${allGenerated.length} file(s) generated from adapters/jobs.json.`);
+  console.log(`\nTotal: ${allGenerated.length} file(s) generated from adapters/jobs.json + adapters/commands.json.`);
   console.log(`Generated files carry "do not hand-edit" header. Re-run this command to regenerate.`);
 }

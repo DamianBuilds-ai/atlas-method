@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "description": "Atlas Method v2 - operator command definitions. Single source of truth for method slash commands. Generate runner-specific overlays from this file via: atlas adapters generate [--runner claude|grok|all]. Never hand-edit the generated output files.",
+  "commands": {
+    "forward": {
+      "description": "Pre-compact handoff. Distills for the next chat - catches scratchpad up, writes compact, prints paste-ready successor prompt. Does NOT seal (wrap seals: baton + worktree gc + push).",
+      "kind": "operator",
+      "steps": [
+        "Resolve domain: infer from newest session file today, or accept {domain} arg",
+        "Catch scratchpad up: compare to conversation; append any missing decisions, results, next steps",
+        "Load just enough spine: read personality and trunk paths from the domain command; direct-read those two files only; no Stage 1 scouts",
+        "Write compact: successor-orientation doc at sessions/current/{DOMAIN}-compact.md with sections: Mode, Live-do-not-undo, Ship-order-locked, Hard-no, Key-files, Host-notes",
+        "Update domain QUEUE: Quick Resume + NEXT CHAT pointer to compact; check off finished work",
+        "Print paste-ready successor prompt and stop"
+      ],
+      "compact_aware_start": {
+        "trigger": "session opened with a named compact file",
+        "load": ["personality", "trunk (map)", "compact", "scratchpad"],
+        "skip": ["orientation apply opener", "Stage 1 scout re-fire"],
+        "not_skip": "Any file the work needs, including files the compact Key-files list names. Compact-aware is not file-blind.",
+        "note": "Successor may load needed files - the compact tells WHERE the work is, not what to ignore."
+      },
+      "scope_boundary": "forward distills, wrap seals. Forward writes the compact. Wrap writes the baton. Neither does the other's job.",
+      "context_economics": "Aim near 200k tokens. Tokens double past that. Auto-compact often fires at 400k+. /forward is how the operator hops before the expensive zone.",
+      "claude": {
+        "output_path": "templates/.claude/commands/forward.md",
+        "format": "flat .md file in .claude/commands/ (filename stem = command name)",
+        "description_field": "description frontmatter - shown in command palette"
+      },
+      "grok": {
+        "output_path": "templates/.grok/commands/forward.md",
+        "format": "flat .md file in .grok/commands/ (filename stem = slash command name; confirmed: skills doc section on command discovery)",
+        "description_field": "description frontmatter",
+        "TODO": "Confirm whether mcpInheritance and user-invocable fields apply to flat commands/ format vs agents/ format. Not enumerated in docs/user-guide/08-skills.md for the commands/ variant. Omitting both; Grok infers from filename."
+      }
+    }
+  }
+}
