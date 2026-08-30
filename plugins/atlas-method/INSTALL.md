@@ -63,6 +63,78 @@ From your project directory, after installing the plugin:
 
 This copies the `CLAUDE.md` soil template and the four-document domain skeleton into your project. It never overwrites files that already exist. Canonical components do not assume scaffold files exist, so `/atlas-method:atlas` and `/atlas-method:newbot` work in any project whether or not you have run init.
 
+## Launcher recipe
+
+**The cwd rule (load-bearing).** Harness hooks and project agents only load
+when the process working directory is your personal-OS repo. If you start
+Claude or Grok from a different directory, neither the SessionStart hook nor
+the domain context fires. Start from the repo, every session.
+
+### The basic pattern
+
+```bash
+cd ~/my-os-repo       # your personal-OS repo
+claude                # or: grok
+```
+
+That is all the harness needs. The SessionStart hook fires, orientation
+generates, and the domain loads.
+
+### Optional effort rungs
+
+Both Claude and Grok expose effort levels. Name your rungs however suits
+your workflow - a common shape is:
+
+| Rung | Intended use |
+|------|-------------|
+| base | Quick lookups, short answers |
+| low | Targeted retrievals, single-file edits |
+| medium | Multi-step tasks, judgment calls |
+| high | Research, large refactors |
+| xhigh | Deep synthesis, max-effort sessions |
+
+Map these to whatever flag your harness exposes (Claude's `--effort`, Grok's
+`--effort`, or a shell alias). The method has no opinion on the flag name -
+what matters is that you establish a consistent vocabulary for your team.
+
+### Shell-function example (generic)
+
+This is a reference shape. Adapt paths and aliases to your own setup. Do not
+copy oxide-specific paths or private names from any published example.
+
+```bash
+# Add to ~/.zshrc or ~/.bashrc
+# Replace ~/my-os-repo with the actual path to your personal-OS repo.
+
+OS_REPO=~/my-os-repo
+
+# Start Claude in the personal-OS repo (optional effort rung: base|low|medium|high|xhigh)
+os() {
+  local effort="${1:-medium}"
+  case "$effort" in
+    base)    cd "$OS_REPO" && claude --effort low  ;;
+    low)     cd "$OS_REPO" && claude --effort low  ;;
+    medium)  cd "$OS_REPO" && claude --effort medium ;;
+    high)    cd "$OS_REPO" && claude --effort high ;;
+    xhigh)   cd "$OS_REPO" && claude --effort xhigh ;;
+    *)       echo "os: unknown rung '$effort'. Valid: base low medium high xhigh" ;;
+  esac
+}
+
+# Grok variant
+gos() {
+  local effort="${1:-medium}"
+  cd "$OS_REPO" && grok --effort "$effort"
+}
+```
+
+Usage: `os` (medium effort), `os high`, `gos low`.
+
+This function shape is distilled from the reference implementation that
+ships with oxide (a private example repo). The file is a reference shape
+only and is not redistributed here; the function above is the method-agnostic
+equivalent any adopter can copy.
+
 ## What the plugin provides
 
 | Component | What it does |

@@ -54,6 +54,7 @@ const MANIFEST_PAYLOAD = [
   'templates/WORKTREES.md',
   'templates/scripts/worktree-gc.sh',
   'adapters/jobs.json',
+  'adapters/commands.json',  // single source for operator slash commands (/forward etc)
   // CLI files - installed project-locally under .atlas/cli/ in adopter targets.
   // Tracking these means atlas update can refresh the CLI when the method ships
   // a new version. Decision: yes, track - updates must refresh the CLI too.

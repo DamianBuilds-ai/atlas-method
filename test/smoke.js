@@ -1962,6 +1962,143 @@ console.log('\n--- smoke: worktree-gc prefix-branch fixture ---');
 // END INSTALLER SMOKE TESTS
 // ============================================================
 
+// ---- /forward command: generates both adapters, idempotent, correct behavior ----
+// These four assertions match the brief's smoke requirements for #56:
+//   (1) /forward core generates both adapters (claude + grok)
+//   (2) regeneration is idempotent
+//   (3) compact-aware clause is present in templates/AGENTS.md
+//   (4) launcher section is present in plugins/atlas-method/INSTALL.md
+console.log('\n--- smoke: /forward command adapters (#56) ---');
+{
+  const { cmdAdapters: cmdAdaptersCmd } = await import(join(cliDir, 'cmd-adapters.js'));
+  const fwdTmp = mkdtempSync(join(tmpdir(), 'atlas-fwd-'));
+  const fwdRoot = join(fwdTmp, 'root');
+  const fwdAdaptersDir = join(fwdRoot, 'adapters');
+  mkdirSync(fwdAdaptersDir, { recursive: true });
+  mkdirSync(join(fwdRoot, 'templates', '.gemini'), { recursive: true });
+
+  // Minimal jobs.json (required by loadJobs) + commands.json fixture
+  const minJobs = {
+    schemaVersion: 1,
+    jobs: {
+      retrieve: {
+        contract: 'Read-only.',
+        isolation: 'shared',
+        claude: { tiers: ['scout'], model: 'claude-haiku-4-5' },
+        grok: { persona: 'explore', effort: 'low', mode: 'read-only', model: null },
+        codex: { worker: 'explorer', note: 'TBD' },
+        gemini: { worker: 'custom', note: 'TBD' },
+      },
+    },
+  };
+  writeFileSync(join(fwdAdaptersDir, 'jobs.json'), JSON.stringify(minJobs, null, 2));
+
+  const minCommands = {
+    schemaVersion: 1,
+    commands: {
+      forward: {
+        description: 'Pre-compact handoff. Distills for the next chat.',
+        kind: 'operator',
+        steps: ['Step one', 'Step two'],
+        compact_aware_start: {
+          trigger: 'session opened with a named compact',
+          load: ['personality', 'trunk (map)', 'compact', 'scratchpad'],
+          skip: ['orientation apply opener', 'Stage 1 scout re-fire'],
+          not_skip: 'Any file the work needs.',
+          note: 'Compact-aware is not file-blind.',
+        },
+        scope_boundary: 'forward distills, wrap seals.',
+        context_economics: 'Aim near 200k tokens.',
+        claude: { output_path: 'templates/.claude/commands/forward.md', format: 'flat .md', description_field: 'description' },
+        grok: { output_path: 'templates/.grok/commands/forward.md', format: 'flat .md', description_field: 'description', TODO: 'Confirm mcpInheritance.' },
+      },
+    },
+  };
+  writeFileSync(join(fwdAdaptersDir, 'commands.json'), JSON.stringify(minCommands, null, 2));
+
+  const origLogFwd = console.log;
+  console.log = () => {};
+  await cmdAdaptersCmd(['generate', '--runner', 'all', '--root', fwdRoot]);
+
+  const claudeCmd = join(fwdRoot, 'templates', '.claude', 'commands', 'forward.md');
+  const grokCmd = join(fwdRoot, 'templates', '.grok', 'commands', 'forward.md');
+
+  // (1a) Claude adapter emitted
+  assert('/forward: claude commands/forward.md emitted', existsSync(claudeCmd), 'file missing');
+
+  // (1b) Grok adapter emitted
+  assert('/forward: grok commands/forward.md emitted', existsSync(grokCmd), 'file missing');
+
+  const claudeContent = readFileSync(claudeCmd, 'utf8');
+  const grokContent = readFileSync(grokCmd, 'utf8');
+
+  // (1c) Both carry do-not-hand-edit header
+  assert('/forward: claude adapter has do-not-hand-edit header', claudeContent.includes('do not hand-edit'), claudeContent.slice(0, 80));
+  assert('/forward: grok adapter has do-not-hand-edit header', grokContent.includes('do not hand-edit'), grokContent.slice(0, 80));
+
+  // (1d) Both carry description frontmatter
+  assert('/forward: claude adapter has description frontmatter', claudeContent.includes('description:'), claudeContent.slice(0, 200));
+  assert('/forward: grok adapter has description frontmatter', grokContent.includes('description:'), grokContent.slice(0, 200));
+
+  // (1e) Both carry compact-aware start section
+  assert('/forward: claude adapter has compact-aware start section', claudeContent.includes('Compact-aware session start'), '');
+  assert('/forward: grok adapter has compact-aware start section', grokContent.includes('Compact-aware session start'), '');
+
+  // (1f) Both state "not file-blind" (per brief: compact-aware is NOT skip-everything)
+  assert('/forward: claude adapter states not-file-blind', claudeContent.includes('not file-blind'), '');
+  assert('/forward: grok adapter states not-file-blind', grokContent.includes('not file-blind'), '');
+
+  // (1g) Grok adapter carries schema TODO marker (per brief: never invented schema, always TODO)
+  assert('/forward: grok adapter carries schema TODO marker', grokContent.includes('TODO(grok-commands-schema)'), '');
+
+  // (2) Regeneration is idempotent
+  await cmdAdaptersCmd(['generate', '--runner', 'all', '--root', fwdRoot]);
+  console.log = origLogFwd;
+
+  const claudeContent2 = readFileSync(claudeCmd, 'utf8');
+  const grokContent2 = readFileSync(grokCmd, 'utf8');
+  assert('/forward: claude adapter re-run idempotent', claudeContent === claudeContent2, 'content changed on re-run');
+  assert('/forward: grok adapter re-run idempotent', grokContent === grokContent2, 'content changed on re-run');
+
+  rmSync(fwdTmp, { recursive: true, force: true });
+}
+
+// (3) Compact-aware clause present in templates/AGENTS.md
+console.log('\n--- smoke: compact-aware clause in templates/AGENTS.md (#56) ---');
+{
+  const repoRoot56 = resolve(thisDir, '..');
+  const agentsPath = join(repoRoot56, 'templates', 'AGENTS.md');
+  if (existsSync(agentsPath)) {
+    const agentsContent = readFileSync(agentsPath, 'utf8');
+    assert('AGENTS.md: compact-aware start section present', agentsContent.includes('Compact-aware start'), '');
+    assert('AGENTS.md: compact-aware start not file-blind stated', agentsContent.includes('not file-blind'), '');
+    assert('AGENTS.md: compact-aware start names skip list', agentsContent.includes('Stage 1 scouts'), '');
+    assert('AGENTS.md: compact-aware start names load list', agentsContent.includes('domain map loads'), '');
+    const lineCount = agentsContent.split('\n').length;
+    assert(`AGENTS.md: stays under 250-line cap (${lineCount} lines)`, lineCount <= 250, `got ${lineCount} lines`);
+  } else {
+    assert('AGENTS.md: file present for compact-aware check', false, `not found at ${agentsPath}`);
+  }
+}
+
+// (4) Launcher section present in plugins/atlas-method/INSTALL.md
+console.log('\n--- smoke: launcher recipe in INSTALL.md (#56) ---');
+{
+  const repoRoot56 = resolve(thisDir, '..');
+  const installPath = join(repoRoot56, 'plugins', 'atlas-method', 'INSTALL.md');
+  if (existsSync(installPath)) {
+    const installContent = readFileSync(installPath, 'utf8');
+    assert('INSTALL.md: Launcher recipe section present', installContent.includes('Launcher recipe'), '');
+    assert('INSTALL.md: cwd rule stated (harness hooks load only when cwd is OS repo)', installContent.includes('working directory'), '');
+    assert('INSTALL.md: no oxide-specific paths (~/oxide)', !installContent.includes('~/oxide'), 'found oxide path');
+    assert('INSTALL.md: no private domain names (Damian)', !installContent.includes('damian@'), 'found private name');
+    assert('INSTALL.md: effort rung table present', installContent.includes('base') && installContent.includes('xhigh'), '');
+    assert('INSTALL.md: shell function example present', installContent.includes('OS_REPO='), '');
+  } else {
+    assert('INSTALL.md: file present for launcher check', false, `not found at ${installPath}`);
+  }
+}
+
 // ---- Summary ----
 console.log(`\nSmoke test: ${passed} passed, ${failed} failed.`);
 if (failed > 0) process.exit(1);
